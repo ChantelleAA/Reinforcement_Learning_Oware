@@ -107,4 +107,10 @@ The codebase is organized into several classes, each handling specific aspects o
 
 The game flow is managed by the `GameController` class, which initializes the components, selects the starting player, and cycles through the game rounds until a stop condition is met. During each round, players take turns making moves based on the current state of the board, with the game state being updated after each move. Rounds and games conclude based on the board state and seed counts, and the board is reset at the end of each game round.
 
-This detailed implementation aims to provide a robust framework for developing and testing reinforcement learning models tailored to the strategic requirements of the Oware game. The modular design allows for easy adaptation and integration with other machine learning environments and tools.
+## How to Use
+To utilize this environment for reinforcement learning:
+1. Instantiate the `GameController` with the desired number of rounds.
+2. Use the `game()` method to start the game simulation.
+3. Interact with the game using the player methods to make moves and capture seeds.
+
+The detailed class structures and methods ensure that the game can be easily modified and extended for different reinforcement learning scenarios, providing a robust framework for experimenting with various strategies in the Oware game.
