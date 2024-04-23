@@ -149,14 +149,14 @@ class Player():
             return True
         return False
 
-    def player_step(self, start_action):
-        final_idx = self.state.distribute_seeds(start_action)
+    def player_step(self, start_action,  current_player, other_player):
+        final_idx = self.state.distribute_seeds(start_action,  current_player, other_player,)
         print(final_idx)
         print(self.B.board)
         seeds = self.B.board[final_idx]
         action = start_action
         while self.B.board[final_idx] > 1:
-            final_idx = self.state.distribute_seeds(action)
+            final_idx = self.state.distribute_seeds(action,  current_player, other_player,)
             print(self.B.board)
             action = self.B.board_format.index(final_idx)
         return self.B.board
@@ -226,8 +226,8 @@ class GameState:
         self.turns_completed = 0
         self.win_list = []
         self.round_winner = 0
-        self.current_player = self.B.current_player
-        self.other_player = self.B.current_player
+        # self.current_player = 0
+        # self.other_player = 0
         self.actions = np.arange(12)
         self.game_actions = []
         self.player_1_actions = []
@@ -292,16 +292,17 @@ class GameState:
         if current_turn_index < self.max_turns:
             self.game_states[current_turn_index, start_idx:end_idx] = current_state
 
-    def switch_player(self):
-        current_player = self.current_player
-        other_player = self.other_player
-        print(f"Initial state: {self.current_player=} and {self.other_player=}")
-        self.current_player = other_player
-        self.other_player = current_player
-        print(f"Final state: {self.current_player=} and {self.other_player=}")
+    # def switch_player(self):
+    #     current_player = self.current_player
+    #     other_player = self.other_player
+    #     print(f"Initial state: {self.current_player=} and {self.other_player=}")
+    #     self.current_player = other_player
+    #     self.other_player = current_player
+    #     print(f"Final state: {self.current_player=} and {self.other_player=}")
+    def switch_player(self, current_player, other_player):
+        current_player, other_player = other_player, current_player
 
-
-    def distribute_seeds(self, action:int):
+    def distribute_seeds(self, action:int,  current_player, other_player):
         """
         Distributes seeds from a selected pit and captures seeds according to the game rules.
         """
@@ -317,14 +318,14 @@ class GameState:
             seeds -= 1 # update number of seeds in hand
             # print(self.B.turns_completed)
             if self.B.turns_completed > 1:
-                self.capture_seeds(action)
+                self.capture_seeds(action,  current_player, other_player)
 
                 if np.sum(self.B.board) < 4:
                     self.B.board = np.zeros((self.B.nrows, self.B.ncols))
                     break
 
             if seeds == 0:    
-                self.capture_seeds(action, during_game=False)
+                self.capture_seeds(action,  current_player, other_player,during_game=False)
 
             # update current index
             pit_index = next_index
@@ -333,14 +334,14 @@ class GameState:
         return next_index
 
 
-    def capture_seeds(self, action:int, during_game = True):
+    def capture_seeds(self, action:int, current_player, other_player, during_game = True):
 
         """ This function is crafted to execute the capture process in the game"""
 
         pit_index = self.B.action2pit(action)  # for the given action value here we want to check the viability of a seed capture
-        player_idx = self.current_player - 1  # Get the player's id
+        player_idx = current_player - 1  # Get the player's id
         print(f"{player_idx=}")
-        print(f"{self.current_player=}")
+        print(f"{current_player=}")
         if self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
             if during_game: # if this capture is happening during the course of a game,
                 # print(f"{self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8 = }")
@@ -351,7 +352,7 @@ class GameState:
 
                 else: # otherwise if it is in the territory of the opponent
                     self.B.board[pit_index] = 0 # remove seeds from the board 
-                    self.B.stores[1 - player_idx] += 4 # the opponent gets the seeds
+                    self.B.stores[other_player - 1] += 4 # the opponent gets the seeds
 
             else: # if its not during the course but at the end
 
@@ -360,7 +361,7 @@ class GameState:
                     self.B.stores[player_idx] += 4
 
         elif self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) <= 8:
-            print(f"Now the board has just 8 seeds left and player {self.current_player} has captured the first 4, so he gets the rest.")
+            print(f"Now the board has just 8 seeds left and player {current_player} has captured the first 4, so he gets the rest.")
             self.B.stores[player_idx] += 8
             self.B.board[self.B.board > 0] = 0
             print(f"Let's start a new round, taking note of our winner for this round!!!")
@@ -564,12 +565,12 @@ class GameController:
             print(f" Start round {self.rules.round}")
             # Decision on who starts the round
             if self.rules.round == 1:
-                self.environment.current_player = self.starting_player("random")
-                self.environment.other_player = 1 if self.environment.current_player == 2 else 2
-                print(self.environment.current_player)
+                current_player = self.starting_player("random")
+                other_player = 1 if current_player == 2 else 2
+                print(current_player)
             else:
-                self.environment.current_player = self.starting_player("last_winner")
-                self.environment.other_player = 1 if self.environment.current_player == 2 else 2
+                current_player = self.starting_player("last_winner")
+                other_player = 1 if current_player == 2 else 2
             
             # increment the number of rounds after the choice of who starts the round
             self.rules.round +=1
@@ -577,23 +578,23 @@ class GameController:
             # Implement a round
             while np.sum(self.board.board, axis = None) > 0:
                 print("Total seeds on board", np.sum(self.board.board, axis = None) )
-                action_c = self.choose_action_player(self.environment.current_player)
-                self.player.player_step(action_c)
-                self.environment.save_actions(self.environment.current_player, action_c)
+                action_c = self.choose_action_player(current_player)
+                self.player.player_step(action_c, current_player, other_player)
+                self.environment.save_actions(current_player, action_c)
 
                 self.environment.save_game_state()
-                print(f"End of turn for player {self.environment.current_player}")
+                print(f"End of turn for player {current_player}")
                 # print(f"GameController Board = {self.board.board}")
-                self.environment.switch_player()
+                self.environment.switch_player(current_player, other_player)
 
                 if self.rules.stop_round() == True:             
                     break
 
-                action_o = self.choose_action_player(self.environment.other_player)
-                self.player.player_step(action_o)
-                self.environment.save_actions(self.environment.other_player, action_o)
+                action_o = self.choose_action_player(other_player)
+                self.player.player_step(action_o,  other_player, current_player)
+                self.environment.save_actions(other_player, action_o)
                 self.environment.save_game_state()
-                print(f"End of turn for player {self.environment.other_player}")
+                print(f"End of turn for player {current_player}")
                 # print(f"GameController Board = {self.board.board}")
                 print(self.board.turns_completed)
                 
