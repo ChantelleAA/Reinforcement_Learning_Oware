@@ -16,9 +16,9 @@ class Board():
         self.board_indices = list(np.ndindex(self.nrows, self.ncols))  # List of board indices for navigation
         self.player_territories = [self.board_indices[5::-1], self.board_indices[6:]]  # Define territories for each player
         self.n_players = 2  # Static number of players
-        self.current_player = 1  # Index of the current player
-        self.other_player = 2  # Index of the opposing player
-        self.turns_completed = 0  # Counter for the number of turns completed
+        self.turns_completed = 0  # Counter for the number of turns completed  
+        self.current_player = 1
+        self.other_player = 2
 
     @property
     def total_seeds(self):
@@ -56,107 +56,79 @@ class Board():
         pit_index = self.action2pit(action=action)
         self.board[pit_index] += new_value
 
-    def distribute_seeds(self, action:int):
-        """
-        Distributes seeds from a selected pit and captures seeds according to the game rules.
-        """
-        pit_index = self.action2pit(action)
-        seeds = self.board[pit_index]  # pick seeds from current pit
-        self.board[pit_index] = 0  # set seeds from current pit to zero
-        while seeds > 0 : # iterate over number of seeds picked 
-            global next_index
-            action = (action + 1) % 12 # navigate to the next pit
-            next_index = self.board_format[action] 
-            self.board[next_index] += 1 # drop seed at the point found
-            # self.capture_seeds(action)
-            seeds -= 1 # update number of seeds in hand
-            print(self.turns_completed)
-            if self.turns_completed > 1:
-                print("Enter seed capture")
-                self.capture_seeds(action)
-                if np.sum(self.board) < 4:
-                    self.board = np.zeros((self.nrows, self.ncols))
-                    break
-            if seeds == 0:    
-                self.capture_seeds(action, during_game=False)
-
-        self.turns_completed +=1 
+    # def distribute_seeds(self, action:int):
+    #     """
+    #     Distributes seeds from a selected pit and captures seeds according to the game rules.
+    #     """
+    #     pit_index = self.action2pit(action)
+    #     seeds = self.board[pit_index]  # pick seeds from current pit
+    #     self.board[pit_index] = 0  # set seeds from current pit to zero
         
-        return next_index
+    #     while seeds > 0 : # iterate over number of seeds picked 
+    #         global next_index
+    #         action = (action + 1) % 12 # navigate to the next pit
+    #         next_index = self.board_format[action] 
+    #         self.board[next_index] += 1 # drop seed at the point found
+    #         seeds -= 1 # update number of seeds in hand
+    #         # print(self.turns_completed)
+    #         if self.turns_completed > 1:
+    #             self.capture_seeds(action)
+
+    #             if np.sum(self.board) < 4:
+    #                 self.board = np.zeros((self.nrows, self.ncols))
+    #                 break
+
+    #         if seeds == 0:    
+    #             self.capture_seeds(action, during_game=False)
+
+    #         # update current index
+    #         pit_index = next_index
+    #     self.turns_completed +=1 
+    #     print(f"End distribution, last seed is {self.board[next_index]}")
+    #     return next_index
 
 
-    def capture_seeds(self, action:int, during_game = True):
+    # def capture_seeds(self, action:int, during_game = True):
 
-        """ This function is crafted to execute the capture process in the game"""
+    #     """ This function is crafted to execute the capture process in the game"""
 
-        pit_index = self.action2pit(action)  # for the given action value here we want to check the viability of a seed capture
+    #     pit_index = self.action2pit(action)  # for the given action value here we want to check the viability of a seed capture
+    #     player_idx = self.current_player - 1  # Get the player's id
+    #     print(f"{player_idx=}")
+    #     print(f"{self.current_player=}")
+    #     if self.get_seeds(action) == 4 and np.sum(self.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
+    #         if during_game: # if this capture is happening during the course of 
 
-        player_idx = self.current_player - 1  # Get the player's id
-        # print(f"{self.get_seeds(action) == 4 = }")
-        # print(f"{np.sum(self.board, axis=None) > 8 = }")
-        # print(f"{np.sum(self.board, axis=None) == 8 = } but {np.sum(self.board, axis=None)=} evidence: {self.board}")
+    #             if pit_index in self.player_territories[player_idx]: # if the pit is the player's territory
+    #                 self.board[pit_index] = 0  # remove seeds from the board
+    #                 self.stores[player_idx] += 4 # add the seeds to the store of the player
 
-        if self.get_seeds(action) == 4 and np.sum(self.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
-            if during_game: # if this capture is happening during the course of a game,
-                print(f"{self.get_seeds(action) == 4 and np.sum(self.board, axis=None) > 8 = }")
-                # print(f"Seed capture during game")
+    #             else: # otherwise if it is in the territory of the opponent
+    #                 self.board[pit_index] = 0 # remove seeds from the board 
+    #                 self.stores[1 - player_idx] += 4 # the opponent gets the seeds
 
-                if pit_index in self.player_territories[player_idx]: # if the pit is the player's territory
+    #         else: # if its not during the course but at the end
 
-                    # print(f" Home capture for player {self.current_player}")
-                    self.board[pit_index] = 0  # remove seeds from the board
-                    self.stores[player_idx] += 4 # add the seeds to the store of the player
+    #             if self.board[pit_index] == 4: 
+    #                 self.board[pit_index] = 0
+    #                 self.stores[pit_index] += 4
 
-                    
-
-                    # print(f"Board after capture: \n {self.board} \n Player stores after capture: \n {self.stores}")
-
-                else: # otherwise if it is in the territory of the opponent
-
-                    # print(f"Opponent, player {self.other_player} has captured during player {self.current_player}'s turn")
-                    self.board[pit_index] = 0 # remove seeds from the board 
-                    self.stores[1 - player_idx] += 4 # the opponent gets the seeds
-
-
-
-                    # print(f"Board after capture: \n {self.board} \n Player stores after capture: \n {self.stores}")
-
-            else: # if its not during the course but at the end
-
-                # print(f"Seed capture at the end of a turn\n"*8)
-
-                if self.board[pit_index] == 4: 
-                    self.board[pit_index] = 0
-                    self.stores[pit_index] += 4
-
-
-
-                    # print(f"Board after capture: \n {self.board} \n Player stores after capture: \n {self.stores}")
-        # elif self.get_seeds(action) == 4 and np.sum(self.board, axis=None) == 8:
-
-        elif self.get_seeds(action) == 4 and np.sum(self.board, axis=None) <= 8:
-
-            print(f"Now the board has just 8 seeds left and player {self.current_player} has captured the first 4, so he gets the rest.")
-
-            self.stores[player_idx] += 8
-
-            # print(f"Board before: \n {self.board}")
-
-            # print(f"Stores status update: {self.stores}")
-
-            self.board[self.board > 0] = 0
-            
-            # print(f"Board after that final capture. Also, round ended.")
-            print(f"Let's start a new round, taking note of our winner for this round!!!")
-
+    #     elif self.get_seeds(action) == 4 and np.sum(self.board, axis=None) <= 8:
+    #         print(f"Now the board has just 8 seeds left and player {self.current_player} has captured the first 4, so he gets the rest.")
+    #         self.stores[player_idx] += 8
+    #         self.board[self.board > 0] = 0
+    #         print(f"Let's start a new round, taking note of our winner for this round!!!")
 
 
 #######################################################################################
 
 ########################################################################################
+
+
 class Player():
-    def __init__(self, board):
+    def __init__(self, board, state):
         self.B = board
+        self.state = GameState(self.B)
         self.stores = self.B.stores
         self.territories = self.B.board_indices
 
@@ -178,31 +150,72 @@ class Player():
         return False
 
     def player_step(self, start_action):
-        # print(f'{start_action=}')
-        # print(f'{type(start_action) = }')
-        final_idx = self.B.distribute_seeds(start_action)
-        # print(self.B.board)
+        final_idx = self.state.distribute_seeds(start_action)
+        print(final_idx)
+        print(self.B.board)
         seeds = self.B.board[final_idx]
-        # print(seeds)
         action = start_action
-        # print(action)
-        while self.B.board[final_idx] != 0:
-            final_idx = self.B.distribute_seeds(action)
-            action = self.B.board_format.index(final_idx)
-            # if self.B.turns_completed == 2000:
-            #     print(self.B.turns_completed)
-            #     break
+        while self.B.board[final_idx] > 1:
+            final_idx = self.state.distribute_seeds(action)
             print(self.B.board)
-            # print(final_idx)
-        print(f"Player step ends here")
+            action = self.B.board_format.index(final_idx)
         return self.B.board
+    
+
+
 
 #######################################################################################
 
 ########################################################################################
 
+
 class GameState:
+    """
+    Manages the state of the game, including tracking the current board, stores, territory counts,
+    and the history of actions taken throughout the game.
+
+    This class is essential for maintaining a record of the game's progress and status, allowing
+    for state retrieval at any point, which is critical for both game logic and potential UI rendering
+    or game replays.
+
+    Attributes:
+        B (Board): An instance of the Board class which represents the current state of the game board.
+        total_games_played (int): The total number of games played during this session.
+        games_won (np.ndarray): Array tracking the number of games won by each player.
+        current_board_state (np.ndarray): Snapshot of the current state of the game board.
+        current_store_state (np.ndarray): Snapshot of the current seeds stored by each player.
+        current_territory_count (np.ndarray): Snapshot of the current territories held by each player.
+        rounds_completed (int): The number of rounds completed in the current game.
+        turns_completed (int): The number of turns completed in the current round.
+        win_list (list): A list of players who have won each round.
+        round_winner (int): The player who won the most recent round.
+        current_player (int): The player who is currently taking their turn.
+        other_player (int): The player who is not currently taking their turn.
+        actions (np.ndarray): Array of possible actions players can take (typically pit indices).
+        game_actions (list): A comprehensive list of all actions taken in the game.
+        player_1_actions (list): A list of actions specifically taken by player 1.
+        player_2_actions (list): A list of actions specifically taken by player 2.
+        max_turns (int): The maximum allowed turns per game to prevent infinite loops.
+        max_rounds (int): The maximum allowed rounds per game.
+        game_states (np.ndarray): A matrix to store detailed game state after each turn for analysis or replay.
+
+    Methods:
+        __init__(board, max_turns=2000, max_rounds=7): Initializes a new game state with a reference to the game board.
+        update_win_list(player): Adds the winning player of a round to the win list.
+        possible_moves(player): Returns a list of possible moves for the specified player based on the current board state.
+        save_actions(player, action): Records an action taken by a player for historical tracking.
+        save_game_state(): Stores the detailed current state of the game in the game_states matrix for later retrieval or analysis.
+    """
+
     def __init__(self, board, max_turns=2000, max_rounds=7):
+        """
+        Initializes the game state with a reference to the board and sets up initial tracking variables.
+
+        Parameters:
+            board (Board): The game board instance.
+            max_turns (int): Maximum number of turns to prevent infinite game loops.
+            max_rounds (int): Maximum number of rounds in a game session.
+        """   
         self.B = board
         self.total_games_played = 0
         self.games_won = np.array([0, 0])
@@ -213,8 +226,8 @@ class GameState:
         self.turns_completed = 0
         self.win_list = []
         self.round_winner = 0
-        self.current_player = 0
-        self.other_player = 0
+        self.current_player = self.B.current_player
+        self.other_player = self.B.current_player
         self.actions = np.arange(12)
         self.game_actions = []
         self.player_1_actions = []
@@ -222,23 +235,6 @@ class GameState:
         self.max_turns = max_turns
         self.max_rounds = max_rounds
         self.game_states = np.zeros((max_turns, max_rounds * (self.B.nrows * self.B.ncols + 2 * self.B.total_stores + 2)), dtype=int)
-
-    # def __init__(self, board, max_turns=2000, max_rounds=7):
-    #     self.B = board
-    #     self.total_games_played = 0
-    #     self.games_won = np.zeros(2, dtype=int)
-    #     self.current_board_state = []
-    #     self.current_store_state = []
-    #     self.current_territory_count = []
-    #     self.rounds_completed = 0
-    #     self.win_list = []
-    #     self.current_player = 0
-    #     self.other_player = 1
-    #     self.actions = np.arange(12)
-    #     self.max_turns = max_turns
-    #     self.max_rounds = max_rounds
-    #     self.game_states = np.zeros((max_turns, max_rounds * (self.B.nrows * self.B.ncols + 2 * self.B.total_stores + 2)), dtype=int)  # Example setup
-
 
     def update_win_list(self, player):
         if player == self.round_winner:
@@ -296,13 +292,114 @@ class GameState:
         if current_turn_index < self.max_turns:
             self.game_states[current_turn_index, start_idx:end_idx] = current_state
 
+    def switch_player(self):
+        current_player = self.current_player
+        other_player = self.other_player
+        print(f"Initial state: {self.current_player=} and {self.other_player=}")
+        self.current_player = other_player
+        self.other_player = current_player
+        print(f"Final state: {self.current_player=} and {self.other_player=}")
+
+
+    def distribute_seeds(self, action:int):
+        """
+        Distributes seeds from a selected pit and captures seeds according to the game rules.
+        """
+        pit_index = self.B.action2pit(action)
+        seeds = self.B.board[pit_index]  # pick seeds from current pit
+        self.B.board[pit_index] = 0  # set seeds from current pit to zero
+        
+        while seeds > 0 : # iterate over number of seeds picked 
+            global next_index
+            action = (action + 1) % 12 # navigate to the next pit
+            next_index = self.B.board_format[action] 
+            self.B.board[next_index] += 1 # drop seed at the point found
+            seeds -= 1 # update number of seeds in hand
+            # print(self.B.turns_completed)
+            if self.B.turns_completed > 1:
+                self.capture_seeds(action)
+
+                if np.sum(self.B.board) < 4:
+                    self.B.board = np.zeros((self.B.nrows, self.B.ncols))
+                    break
+
+            if seeds == 0:    
+                self.capture_seeds(action, during_game=False)
+
+            # update current index
+            pit_index = next_index
+        self.turns_completed +=1 
+        print(f"End distribution, last seed is {self.B.board[next_index]}")
+        return next_index
+
+
+    def capture_seeds(self, action:int, during_game = True):
+
+        """ This function is crafted to execute the capture process in the game"""
+
+        pit_index = self.B.action2pit(action)  # for the given action value here we want to check the viability of a seed capture
+        player_idx = self.current_player - 1  # Get the player's id
+        print(f"{player_idx=}")
+        print(f"{self.current_player=}")
+        if self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
+            if during_game: # if this capture is happening during the course of a game,
+                # print(f"{self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8 = }")
+
+                if pit_index in self.B.player_territories[player_idx]: # if the pit is the player's territory
+                    self.B.board[pit_index] = 0  # remove seeds from the board
+                    self.B.stores[player_idx] += 4 # add the seeds to the store of the player
+
+                else: # otherwise if it is in the territory of the opponent
+                    self.B.board[pit_index] = 0 # remove seeds from the board 
+                    self.B.stores[1 - player_idx] += 4 # the opponent gets the seeds
+
+            else: # if its not during the course but at the end
+
+                if self.B.board[pit_index] == 4: 
+                    self.B.board[pit_index] = 0
+                    self.B.stores[player_idx] += 4
+
+        elif self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) <= 8:
+            print(f"Now the board has just 8 seeds left and player {self.current_player} has captured the first 4, so he gets the rest.")
+            self.B.stores[player_idx] += 8
+            self.B.board[self.B.board > 0] = 0
+            print(f"Let's start a new round, taking note of our winner for this round!!!")
 
 
 #######################################################################################
 
 ########################################################################################
+
+
 class RuleEngine:
+    """
+    Manages and applies the rules of the game, determining the validity of actions and the conditions for stopping rounds and the game.
+
+    This class is responsible for checking if actions taken by players are valid, determining when a round or the game should end based on the state of the board and game rules.
+
+    Attributes:
+        B (Board): An instance of the Board class, which represents the game board and its state.
+        state (GameState): An instance of the GameState class, used to track and manage the current state of the game.
+        round (int): The current round number in the game.
+        turn (int): The current turn number within the round.
+        actions (np.ndarray): An array of possible action indices, usually representing pits on the board.
+
+    Methods:
+        __init__(board, state): Initializes the rule engine with references to the game board and state.
+        is_valid_action(action, player): Determines if a given action is valid for a player at the current state.
+        stop_round(): Checks if the current round should stop based on the game board's state.
+        stop_game(): Determines if the game should be stopped, typically based on a win condition or other rule.
+        check_round_end(): Verifies if the round should end, generally due to a specific board state.
+    """
+
     def __init__(self, board, state):
+        """
+        Initializes the RuleEngine with necessary components of the game.
+
+        Parameters:
+            board (Board): The game board which holds the state and configuration of seeds and pits.
+            state (GameState): The object managing the overall state of the game, including scores and turns.
+        """
         self.B = board
         self.state = state
         self.round = 1
@@ -310,21 +407,49 @@ class RuleEngine:
         self.actions = np.arange(12)
 
     def is_valid_action(self, action, player):
+        """
+        Checks if a specific action is valid for a given player based on the current game state.
+
+        Parameters:
+            action (int): The action to check, typically an index representing a pit.
+            player (int): The player number performing the action.
+
+        Returns:
+            bool: True if the action is valid, False otherwise.
+        """
         # check if the action is valid for a player
         if action in self.state.possible_moves(player):
             return True
         return False
 
     def stop_round(self):
+        """
+        Determines if the current round should be stopped, typically when no seeds are left to play.
+
+        Returns:
+            bool: True if the board is empty and the round should stop, False otherwise.
+        """
         if np.sum(self.B.board, axis=None) == 0:
             return True
 
     def stop_game(self):
-        if self.B.territory_count[0] == 12 :
+        """
+        Checks if the game should end, usually based on a significant victory condition or rule, such as a player achieving a specific territory count.
+
+        Returns:
+            bool: True if the game should end, for example, if a player's territory count reaches a set threshold.
+        """
+        if self.B.territory_count[1] == 12 or self.B.territory_count[0] == 12:
             return True
         return False
 
     def check_round_end(self):
+        """
+        Verifies whether the current round should end based on the board's state, typically when no seeds are left to distribute.
+
+        Returns:
+            bool: True if no seeds are left on the board, indicating the end of the round.
+        """        
         if np.sum(self.B.board, axis = None)==0:
             return True
         
@@ -334,15 +459,54 @@ class RuleEngine:
 ########################################################################################
 
 class GameController:
+    """
+    Manages the overall flow of an Oware game, controlling game rounds, player actions, and the game state.
+
+    This controller sets up the game, decides the starting player, manages the sequence of turns within each round,
+    and checks for end-of-game conditions. It interacts with the `Board`, `Player`, and `GameState` classes to
+    execute the game logic and maintain the state of the game.
+
+    Attributes:
+        n_players (int): Number of players in the game, typically two.
+        board (Board): An instance of the Board class representing the game board.
+        player (Player): An instance of the Player class to manage player actions.
+        environment (GameState): An instance of the GameState class to track and store the game's state.
+        rules (RuleEngine): An instance of the RuleEngine class to enforce game rules.
+        max_turns (int): The maximum number of turns allowed to prevent infinite loops.
+
+    Methods:
+        __init__(num_of_rounds=7): Initializes the game controller with a specified number of rounds.
+        starting_player(how="random"): Determines which player starts a round.
+        choose_action_player(player): Randomly selects a valid action for the given player.
+        game(): Executes the main game loop, handling the progression of rounds and managing game state updates.
+
+    The game() method is the core function that runs the game loop, orchestrating the game by managing rounds,
+    processing player actions, updating the state, and determining when the game ends based on the rules defined
+    in the RuleEngine.
+
+    Example:
+        num_of_rounds = 7
+        game = GameController(num_of_rounds)
+        game.game()  # Start the game loop
+    """
     def __init__(self, num_of_rounds=7):
         self.n_players = 2
         self.board = Board()
-        self.player = Player(self.board)
         self.environment = GameState(self.board)
+        self.player = Player(self.board, self.environment)
         self.rules = RuleEngine(self.board, self.environment)
         self.max_turns = 2000
 
     def starting_player(self, how="random"):
+        """
+        Determines the starting player of a round based on the specified method.
+
+        Parameters:
+            how (str): Method to determine the starting player. Options are "random" or "last_winner".
+
+        Returns:
+            int: The player number who will start the round.
+        """
         if how == "random":
             starter = random.sample([1, 2], 1)
             return starter[0]
@@ -355,27 +519,46 @@ class GameController:
 
 
     def choose_action_player(self, player):
+        """
+        Selects a valid action for the player randomly from the possible moves.
+
+        Parameters:
+            player (int): The player number for whom to select the action.
+
+        Returns:
+            int: The action index chosen for the player.
+        """
         return random.sample(self.environment.possible_moves(player), 1)[0]
 
 
 
     def game(self):
 
-        """ Game implementation here attempts to implement a full game consisting of 6 or more rounds.
-            A game consists of several rounds, after hich the following variables in the game are updated.
-            - The board is reset.
-            - The stores for each player are reset
-            - The number of rounds completed are incremented by 1
-            - A winner is take based on the number of seds in store and is documented
-            - The territory count of both players is recalculated
-            - The territory indices of both players is rearranged
-            - The win_list is updated
-            - The actions taken at each point in the game are kept in a array wwith 12 slots for each round.
-            - A Game round is completed after several turns. Here is what happpens in the game after every turn is completed :
-                - The number of turns completed is incremented by 1
-                - add actions to list of actions in the game
-                - add action of each player to his individual list of actions
         """
+        Executes the game loop, managing rounds and player turns until game completion conditions are met.
+
+        This loop orchestrates the game flow by:
+        1. Determining which player starts each round, alternating starting players based on random choice for the first round and the winner of the previous round for subsequent rounds.
+        2. Incrementing the round count and processing individual turns within each round until there are no seeds left on the board or a stopping condition is triggered.
+        3. Each player's turn involves choosing a valid action (pit from which to distribute seeds), distributing seeds from the selected pit, and potentially capturing seeds from the board.
+        4. After each action, the game state is saved to record the actions and board state.
+        5. The loop checks if the round should stop (based on the board state or other game rules), and if so, breaks out of the round loop to start a new round.
+        6. After the completion of each round, the loop checks for game end conditions such as reaching a maximum number of rounds or a specific condition that defines the end of the game.
+        7. Updates the game statistics, including the number of games won by each player and updates to territory counts based on the results of the round.
+        8. Resets the board to its initial state at the end of each round and prepares for the next round if the game has not reached its conclusion.
+
+        Parameters:
+        - num_of_rounds (int): Maximum number of rounds to be played.
+        - self.max_turns (int): Maximum number of turns allowed, to prevent potentially infinite games.
+
+        Outputs:
+        - Prints the current round and turn, the state of the board after each turn, and messages at the end of each round and game.
+        - Updates internal state to track rounds, player scores, and other game metrics.
+
+        Side effects:
+        - Modifies the internal state of the board, players, and game controller to reflect the progression of the game.
+        """
+
         
         while self.rules.round < num_of_rounds and self.board.turns_completed < self.max_turns:
             print(f" Start round {self.rules.round}")
@@ -401,6 +584,7 @@ class GameController:
                 self.environment.save_game_state()
                 print(f"End of turn for player {self.environment.current_player}")
                 # print(f"GameController Board = {self.board.board}")
+                self.environment.switch_player()
 
                 if self.rules.stop_round() == True:             
                     break
@@ -440,7 +624,7 @@ class GameController:
 
             self.environment.rounds_completed += 1
             print(self.environment.rounds_completed)
-            print(f"Territory_status: {self.board.territory_count}\n\n\n\n\n\n")
+            print(f"Territory_status: {self.board.territory_count}")
             self.board.reset_board()
             
             self.board.stores = np.array([0, 0])
@@ -453,3 +637,6 @@ num_of_rounds = 20
 game = GameController(num_of_rounds)
 game.game()
 print(game.environment.game_states)
+print(f"{game.environment.current_store_state=}")
+print(f"{game.environment.current_territory_count=}")
+
