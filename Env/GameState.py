@@ -63,7 +63,7 @@ class GameState:
         self.player_2_actions = []      
         self.max_turns = max_turns
         self.max_rounds = max_rounds
-        self.game_states = np.zeros((max_turns, max_rounds * (self.B.nrows * self.B.ncols + 2 * self.B.total_stores + 2)), dtype=int)
+        self.game_state = []
         self.stores_list = []
 
     def update_win_list(self, player):
@@ -103,37 +103,14 @@ class GameState:
         Each row is padded or truncated to length 'k'.
         Each row format: [board state, store state, territory count, ...] for each round.
         """
-        # Flatten current state components into a single array
-        current_state = np.concatenate([
-            self.B.board.flatten(),
-            self.B.stores,
-            self.B.territory_count
-        ])
-        current_state = np.hstack(
-            self.B.board,
-            np.array(self.s)
-        )
-        num_elements = len(current_state)
-        total_required_per_round = self.max_turns * num_elements  # Total elements needed per round
 
-        # Check if current round storage is initialized, if not, initialize
-        if self.rounds_completed >= self.game_states.shape[1]:
-            # Expand game_states array to accommodate more rounds if necessary
-            new_columns = self.rounds_completed + 1 - self.game_states.shape[1]
-            additional_cols = np.zeros((self.max_turns, num_elements * new_columns), dtype=int)
-            self.game_states = np.hstack((self.game_states, additional_cols))
+        a = np.reshape(self.current_board_state, (2, -1))
+        b = np.reshape(self.current_store_state, (2, 1))
+        c = np.reshape(self.current_territory_count, (2, 1))
 
-        # Compute the index for the current round
-        round_index = self.rounds_completed % self.max_rounds
-
-        # Save the current state into the appropriate slice of the game_states array
-        current_turn_index = self.turns_completed % self.max_turns  # Current turn within the round
-        start_idx = round_index * num_elements
-        end_idx = start_idx + num_elements
-
-        # Handle potential overflow if this is the last turn that can be recorded
-        if current_turn_index < self.max_turns:
-            self.game_states[current_turn_index, start_idx:end_idx] = current_state
+        current_state = np.hstack([a, b, c])
+        
+        self.game_state.append(current_state)
 
     def switch_player(self, current_player, other_player):
         current_player, other_player = other_player, current_player
@@ -152,7 +129,6 @@ class GameState:
             next_index = self.B.board_format[action] 
             self.B.board[next_index] += 1 # drop seed at the point found
             seeds -= 1 # update number of seeds in hand
-            # print(self.B.turns_completed)
             if self.B.turns_completed > 1:
                 self.capture_seeds(action,  current_player, other_player)
 
@@ -166,7 +142,6 @@ class GameState:
             # update current index
             pit_index = next_index
         self.turns_completed +=1 
-        print(f"End distribution, last seed is {self.B.board[next_index]}")
         return next_index
 
 
@@ -176,11 +151,9 @@ class GameState:
 
         pit_index = self.B.action2pit(action)  # for the given action value here we want to check the viability of a seed capture
         player_idx = current_player - 1  # Get the player's id
-        print(f"{player_idx=}")
-        print(f"{current_player=}")
+
         if self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
             if during_game: # if this capture is happening during the course of a game,
-                # print(f"{self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8 = }")
 
                 if pit_index in self.B.player_territories[player_idx]: # if the pit is the player's territory
                     self.B.board[pit_index] = 0  # remove seeds from the board
@@ -197,7 +170,7 @@ class GameState:
                     self.B.stores[player_idx] += 4
 
         elif self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) <= 8:
-            print(f"Now the board has just 8 seeds left and player {current_player} has captured the first 4, so he gets the rest.")
+
             self.B.stores[player_idx] += 8
             self.B.board[self.B.board > 0] = 0
-            print(f"Let's start a new round, taking note of our winner for this round!!!")
+
