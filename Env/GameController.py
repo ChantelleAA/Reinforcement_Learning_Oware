@@ -1,8 +1,10 @@
 import numpy as np
-from Board import Board
-from Player import Player
-from GameState import GameState
-from RuleEngine import RuleEngine
+import random
+
+from .Board import Board
+from .Player import Player
+from .GameState import GameState
+from .RuleEngine import RuleEngine
 
 class GameController:
     """
@@ -79,7 +81,7 @@ class GameController:
 
 
     def game(self, num_of_rounds):
-
+        print(f"START GAME ...")
         """
         Executes the game loop, managing rounds and player turns until game completion conditions are met.
 
@@ -107,52 +109,59 @@ class GameController:
 
         
         while self.rules.round < num_of_rounds and self.board.turns_completed < self.max_turns:
-            print(f" Start round {self.rules.round}")
+
+            print(f" START ROUND {self.rules.round}")
+            print("\n")
+            
             # Decision on who starts the round
             if self.rules.round == 1:
                 current_player = self.starting_player("random")
                 other_player = 1 if current_player == 2 else 2
-                print(current_player)
             else:
                 current_player = self.starting_player("last_winner")
                 other_player = 1 if current_player == 2 else 2
-            
+            print(f"Player {current_player} starts this round")
+
             # increment the number of rounds after the choice of who starts the round
             self.rules.round +=1
             
             # Implement a round
             while np.sum(self.board.board, axis = None) > 0:
-                print("Total seeds on board", np.sum(self.board.board, axis = None) )
                 action_c = self.choose_action_player(current_player)
+                print(f"Current player: {current_player}")
+                print(f"Player {current_player} action options {self.environment.possible_moves(current_player)}\n")
+
+                print(f"Player {current_player} chooses action: {action_c}\n")
+
                 self.player.player_step(action_c, current_player, other_player)
                 self.environment.save_actions(current_player, action_c)
-
+                print("GAME STATE SAVING ...")
                 self.environment.save_game_state()
-                print(f"End of turn for player {current_player}")
-                # print(f"GameController Board = {self.board.board}")
-                self.environment.switch_player(current_player, other_player)
+                print("GAME STATE SAVED ...")
+                print(f"Total states saved ({len(self.environment.game_state)})\n")
 
+                print(f"Switch Players ...")
+                self.environment.switch_player(current_player, other_player)
+                
                 if self.rules.stop_round() == True:             
                     break
-
+                
                 action_o = self.choose_action_player(other_player)
+
+                print(f"Current player: {other_player}")
+                print(f"Player {other_player} action options {self.environment.possible_moves(other_player)}\n")
+
+                print(f"Player {other_player} chooses action: {action_o}\n")
                 self.player.player_step(action_o,  other_player, current_player)
                 self.environment.save_actions(other_player, action_o)
+                print("GAME STATE SAVING ...")
                 self.environment.save_game_state()
-                print(f"End of turn for player {current_player}")
-                # print(f"GameController Board = {self.board.board}")
-                print(self.board.turns_completed)
+                print("GAME STATE SAVED ...")
                 
                 if self.board.turns_completed == 2000:
-                    print(self.board.turns_completed,"2000")
                     break
 
-            print(f"End round")
-            # print(f" Final GameController Board = {self.board.board}")
-            print(self.board.turns_completed)
-
             if self.board.turns_completed == 2000:
-                print(self.board.turns_completed ,"2000")
                 break
 
             if self.board.stores[0] > self.board.stores[1]:
@@ -169,11 +178,13 @@ class GameController:
                 self.board.territory_count[0] -=1
 
             self.environment.rounds_completed += 1
-            print(self.environment.rounds_completed)
-            print(f"Territory_status: {self.board.territory_count}")
+            print(f"ROUND ENDS\n")
+            print(f"Rounds completed: {self.environment.rounds_completed }")
+
+            print('RESET BOARD AND STORES FOR NEW ROUND ...')
             self.board.reset_board()
-            
             self.board.stores = np.array([0, 0])
 
             if self.rules.stop_game() == True:
+                print(f"STOP GAME")
                 break
