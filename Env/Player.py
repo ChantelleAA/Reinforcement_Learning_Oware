@@ -1,4 +1,4 @@
-import GameState
+from .GameState import GameState
 
 class Player:
     def __init__(self, board, state):
@@ -26,12 +26,9 @@ class Player:
 
     def player_step(self, start_action,  current_player, other_player):
         final_idx = self.state.distribute_seeds(start_action,  current_player, other_player,)
-        print(final_idx)
-        print(self.B.board)
         seeds = self.B.board[final_idx]
         action = start_action
         while self.B.board[final_idx] > 1:
             final_idx = self.state.distribute_seeds(action,  current_player, other_player,)
-            print(self.B.board)
             action = self.B.board_format.index(final_idx)
         return self.B.board
