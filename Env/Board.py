@@ -1,6 +1,6 @@
 import numpy as np
 
-class Board:
+class Board():
     """
     Manages the Oware board layout, actions, and score tracking. This class is central to the Oware nam-Nam environment and interacts directly with the game logic.
     """
