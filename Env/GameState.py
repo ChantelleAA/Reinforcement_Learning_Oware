@@ -64,7 +64,10 @@ class GameState:
         self.max_turns = max_turns
         self.max_rounds = max_rounds
         self.game_state = []
+        self.all_states = []
+        self.all_states_np = np.zeros((16, 1))
         self.stores_list = []
+        self.game_winner_list = []
 
     def update_win_list(self, player):
         if player == self.round_winner:
@@ -109,8 +112,37 @@ class GameState:
         c = np.reshape(self.current_territory_count, (2, 1))
 
         current_state = np.hstack([a, b, c])
-        
+
         self.game_state.append(current_state)
+
+    def save_all_states(self):
+        if np.sum(self.current_board_state)>0:
+            a = np.reshape(self.current_board_state, (-1, 1))
+            b = np.reshape(self.current_store_state, (-1, 1))
+            c = np.reshape(self.current_territory_count, (-1, 1))
+
+            current_state = np.concatenate([a, b, c])
+            self.all_states_np = np.concatenate([self.all_states_np, current_state], axis=1)
+            self.all_states.append(current_state)
+
+
+    def game_winner(self):
+        
+        if self.current_territory_count[0] > self.current_territory_count[1]:
+            print("True1")
+            winner = 1
+        elif self.current_territory_count[0] < self.current_territory_count[1]:
+            print("True2")
+            winner = 2
+        else:
+            print("True 3")
+            winner = 0
+        return winner
+
+    def save_winner(self):
+        winner = self.game_winner()
+        self.game_winner_list.append(winner)
+
 
     def switch_player(self, current_player, other_player):
         current_player, other_player = other_player, current_player
