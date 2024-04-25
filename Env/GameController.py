@@ -127,6 +127,8 @@ class GameController:
             
             # Implement a round
             while np.sum(self.board.board, axis = None) > 0:
+                self.environment.save_all_states()
+                self.environment.save_game_state()
                 action_c = self.choose_action_player(current_player)
                 print(f"Current player: {current_player}")
                 print(f"Player {current_player} action options {self.environment.possible_moves(current_player)}\n")
@@ -136,6 +138,7 @@ class GameController:
                 self.player.player_step(action_c, current_player, other_player)
                 self.environment.save_actions(current_player, action_c)
                 print("GAME STATE SAVING ...")
+                self.environment.save_all_states()
                 self.environment.save_game_state()
                 print("GAME STATE SAVED ...")
                 print(f"Total states saved ({len(self.environment.game_state)})\n")
@@ -156,13 +159,15 @@ class GameController:
                 self.environment.save_actions(other_player, action_o)
                 print("GAME STATE SAVING ...")
                 self.environment.save_game_state()
+                self.environment.save_all_states()
                 print("GAME STATE SAVED ...")
                 
-                if self.board.turns_completed == 2000:
-                    break
+                # if self.board.turns_completed == 2000:
+                #     print("2000 turns in round reached")
+                #     break
 
-            if self.board.turns_completed == 2000:
-                break
+            # if self.board.turns_completed == 2000:
+            #     break
 
             if self.board.stores[0] > self.board.stores[1]:
                 self.environment.games_won[0] +=1
@@ -178,6 +183,9 @@ class GameController:
                 self.board.territory_count[0] -=1
 
             self.environment.rounds_completed += 1
+            winner = self.environment.game_winner()
+            self.environment.save_winner() 
+
             print(f"ROUND ENDS\n")
             print(f"Rounds completed: {self.environment.rounds_completed }")
 
@@ -188,3 +196,10 @@ class GameController:
             if self.rules.stop_game() == True:
                 print(f"STOP GAME")
                 break
+            
+            
+            if winner != 0:
+                print(f"Player {winner} wins!")
+            else: 
+                print(f" Game ends in draw ")
+                   
