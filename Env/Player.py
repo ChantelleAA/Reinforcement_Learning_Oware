@@ -1,83 +1,52 @@
-import numpy as np
+from .GameState import GameState
 
-class RuleEngine:
-    """
-    Manages and applies the rules of the game, determining the validity of actions and the conditions for stopping rounds and the game.
-
-    This class is responsible for checking if actions taken by players are valid, determining when a round or the game should end based on the state of the board and game rules.
-
-    Attributes:
-        B (Board): An instance of the Board class, which represents the game board and its state.
-        state (GameState): An instance of the GameState class, used to track and manage the current state of the game.
-        round (int): The current round number in the game.
-        turn (int): The current turn number within the round.
-        actions (np.ndarray): An array of possible action indices, usually representing pits on the board.
-
-    Methods:
-        __init__(board, state): Initializes the rule engine with references to the game board and state.
-        is_valid_action(action, player): Determines if a given action is valid for a player at the current state.
-        stop_round(): Checks if the current round should stop based on the game board's state.
-        stop_game(): Determines if the game should be stopped, typically based on a win condition or other rule.
-        check_round_end(): Verifies if the round should end, generally due to a specific board state.
-    """
-
+class Player:
     def __init__(self, board, state):
-        """
-        Initializes the RuleEngine with necessary components of the game.
-
-        Parameters:
-            board (Board): The game board which holds the state and configuration of seeds and pits.
-            state (GameState): The object managing the overall state of the game, including scores and turns.
-        """
         self.B = board
-        self.state = state
-        self.round = 1
-        self.turn = 1
-        self.actions = np.arange(12)
+        self.state = GameState(self.B)
+        self.stores = self.B.stores
+        self.territories = self.B.board_indices
 
-    def is_valid_action(self, action, player):
-        """
-        Checks if a specific action is valid for a given player based on the current game state.
+    def territory_count(self):
+        return self.B.territory_count
 
-        Parameters:
-            action (int): The action to check, typically an index representing a pit.
-            player (int): The player number performing the action.
+    def territory_indices(self, player):
+        player_id = player - 1
+        if player == 1:
+            return self.territories[:6]
+        elif player == 2:
+            return self.territories[6:]
 
-        Returns:
-            bool: True if the action is valid, False otherwise.
-        """
-        # check if the action is valid for a player
-        if action in self.state.possible_moves(player):
+    def is_round_winner(self, player):
+        player_id = player - 1
+        opponent_id = 1 - player_id
+        if self.stores[player_id] > self.stores[opponent_id]:
             return True
         return False
 
-    def stop_round(self):
-        """
-        Determines if the current round should be stopped, typically when no seeds are left to play.
+    # def player_step(self, start_action,  current_player, other_player):
+    #     final_idx = self.state.distribute_seeds(start_action,  current_player, other_player,)
+    #     seeds = self.B.board[final_idx]
+    #     action = start_action
+    #     while self.B.board[final_idx] > 1:
+    #         final_idx = self.state.distribute_seeds(action,  current_player, other_player,)
+    #         action = self.B.board_format.index(final_idx)
+    #     return self.B.board
 
-        Returns:
-            bool: True if the board is empty and the round should stop, False otherwise.
+    def player_step(self, start_action, current_player, other_player):
         """
-        if np.sum(self.B.board, axis=None) == 0:
-            return True
-
-    def stop_game(self):
+        Executes a player's turn starting from a given action, repeatedly distributing seeds
+        until the pit where the last seed lands has 1 or 0 seeds.
         """
-        Checks if the game should end, usually based on a significant victory condition or rule, such as a player achieving a specific territory count.
+        action = start_action
+        final_idx = self.state.distribute_seeds(action, current_player, other_player)
+        max_iterations = 10  # Set a reasonable limit to prevent infinite loops
 
-        Returns:
-            bool: True if the game should end, for example, if a player's territory count reaches a set threshold.
-        """
-        if self.B.territory_count[1] == 12 or self.B.territory_count[0] == 12:
-            return True
-        return False
+        for _ in range(max_iterations):
+            if self.B.board[final_idx] <= 1:
+                break  # Exit the loop if the last pit has 1 or 0 seeds
+            action = self.B.board_format.index(final_idx)  # Update action based on the last index
+            final_idx = self.state.distribute_seeds(action, current_player, other_player)
 
-    def check_round_end(self):
-        """
-        Verifies whether the current round should end based on the board's state, typically when no seeds are left to distribute.
+        return self.B.board
 
-        Returns:
-            bool: True if no seeds are left on the board, indicating the end of the round.
-        """        
-        if np.sum(self.B.board, axis = None)==0:
-            return True
