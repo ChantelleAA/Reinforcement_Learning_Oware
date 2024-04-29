@@ -138,6 +138,7 @@ class GameController:
                 self.player.player_step(action_c, current_player, other_player)
                 self.environment.save_actions(current_player, action_c)
                 print("GAME STATE SAVING ...")
+                print(f"{self.environment.current_board_state}")
                 self.environment.save_all_states()
                 self.environment.save_game_state()
                 print("GAME STATE SAVED ...")
@@ -146,7 +147,7 @@ class GameController:
                 print(f"Switch Players ...")
                 self.environment.switch_player(current_player, other_player)
                 
-                if self.rules.stop_round() == True:             
+                if self.rules.stop_round() or np.sum(self.environment.current_board_state) == 0:             
                     break
                 
                 action_o = self.choose_action_player(other_player)
@@ -158,10 +159,13 @@ class GameController:
                 self.player.player_step(action_o,  other_player, current_player)
                 self.environment.save_actions(other_player, action_o)
                 print("GAME STATE SAVING ...")
+                print(f"{self.environment.current_board_state}")
                 self.environment.save_game_state()
                 self.environment.save_all_states()
                 print("GAME STATE SAVED ...")
                 
+                if self.rules.stop_round() or np.sum(self.environment.current_board_state) == 0:             
+                    break
                 # if self.board.turns_completed == 2000:
                 #     print("2000 turns in round reached")
                 #     break
@@ -199,7 +203,7 @@ class GameController:
             
             
             if winner != 0:
-                print(f"Player {winner} wins!")
+                print(f"Player {winner} wins!, {self.environment.current_territory_count}")
             else: 
                 print(f" Game ends in draw ")
                    
