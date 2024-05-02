@@ -129,13 +129,10 @@ class GameState:
     def game_winner(self):
         
         if self.current_territory_count[0] > self.current_territory_count[1]:
-            print("True1")
             winner = 1
         elif self.current_territory_count[0] < self.current_territory_count[1]:
-            print("True2")
             winner = 2
         else:
-            print("True 3")
             winner = 0
         return winner
 
@@ -178,6 +175,26 @@ class GameState:
     #     self.turns_completed +=1 
     #     return next_index
 
+    # def distribute_seeds(self, action: int, current_player, other_player):
+    #     """
+    #     Distributes seeds from a selected pit and captures seeds according to the game rules.
+    #     """
+    #     pit_index = self.B.action2pit(action)
+    #     seeds = int(self.B.board[pit_index])  # pick seeds from the selected pit
+    #     self.B.board[pit_index] = 0  # empty the selected pit
+
+    #     for _ in range(seeds):  # iterate over the number of seeds picked
+    #         global next_index
+    #         action = (action + 1) % 12  # move to the next pit cyclically
+    #         next_index = self.B.board_format[action]
+    #         self.B.board[next_index] += 1  # drop one seed in the next pit
+
+    #     # After all seeds are distributed, check if it's time to capture seeds
+    #     self.capture_seeds(action, current_player, other_player)
+
+    #     self.B.turns_completed += 1  # increment the turn counter
+    #     return next_index
+
     def distribute_seeds(self, action: int, current_player, other_player):
         """
         Distributes seeds from a selected pit and captures seeds according to the game rules.
@@ -192,62 +209,65 @@ class GameState:
             next_index = self.B.board_format[action]
             self.B.board[next_index] += 1  # drop one seed in the next pit
 
-        # After all seeds are distributed, check if it's time to capture seeds
-        self.capture_seeds(action, current_player, other_player)
+            # After all seeds are distributed, check if it's time to capture seeds
+            if self.B.turns_completed > 1:
+                self.capture_seeds(action,  current_player, other_player)
+
+                if np.sum(self.B.board) < 4:
+                    self.B.board = np.zeros((self.B.nrows, self.B.ncols))
+                    break
+
+            if seeds == 0:    
+                self.capture_seeds(action,  current_player, other_player,during_game=False)
 
         self.B.turns_completed += 1  # increment the turn counter
         return next_index
 
+    def capture_seeds(self, action:int, current_player, other_player, during_game = True):
 
-    # def capture_seeds(self, action:int, current_player, other_player, during_game = True):
+        """ This function is crafted to execute the capture process in the game"""
 
-    #     """ This function is crafted to execute the capture process in the game"""
+        pit_index = self.B.action2pit(action)  # for the given action value here we want to check the viability of a seed capture
+        player_idx = current_player - 1  # Get the player's id
 
-    #     pit_index = self.B.action2pit(action)  # for the given action value here we want to check the viability of a seed capture
-    #     player_idx = current_player - 1  # Get the player's id
+        if self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
+            if during_game: # if this capture is happening during the course of a game,
 
-    #     if self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
-    #         if during_game: # if this capture is happening during the course of a game,
+                if pit_index in self.B.player_territories[player_idx]: # if the pit is the player's territory
+                    self.B.board[pit_index] = 0  # remove seeds from the board
+                    self.B.stores[player_idx] += 4 # add the seeds to the store of the player
 
-    #             if pit_index in self.B.player_territories[player_idx]: # if the pit is the player's territory
-    #                 self.B.board[pit_index] = 0  # remove seeds from the board
-    #                 self.B.stores[player_idx] += 4 # add the seeds to the store of the player
+                else: # otherwise if it is in the territory of the opponent
+                    self.B.board[pit_index] = 0 # remove seeds from the board 
+                    self.B.stores[other_player - 1] += 4 # the opponent gets the seeds
 
-    #             else: # otherwise if it is in the territory of the opponent
-    #                 self.B.board[pit_index] = 0 # remove seeds from the board 
-    #                 self.B.stores[other_player - 1] += 4 # the opponent gets the seeds
+            else: # if its not during the course but at the end
 
-    #         else: # if its not during the course but at the end
+                if self.B.board[pit_index] == 4: 
+                    self.B.board[pit_index] = 0
+                    self.B.stores[player_idx] += 4
 
-    #             if self.B.board[pit_index] == 4: 
-    #                 self.B.board[pit_index] = 0
-    #                 self.B.stores[player_idx] += 4
+        elif self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) <= 8:
+            print("Enter condition where seeds on board is 8\n")
+            print(f"Prevailing player is {current_player}\n")
+            print(f"Board before:\n{self.B.board}")
+            self.B.stores[player_idx] += 8
+            self.B.board[self.B.board > 0] = 0
+            print(f"Board after:\n{self.B.board}")
 
-    #     elif self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) <= 8:
-    #         print("Enter condition where seeds on board is 8\n")
-    #         print(f"Prevailing player is {current_player}\n")
-    #         print(f"Board before:\n{self.B.board}")
-    #         self.B.stores[player_idx] += 8
-    #         self.B.board[self.B.board > 0] = 0
-    #         print(f"Board after:\n{self.B.board}")
-
-    def capture_seeds(self, action: int, current_player, other_player, during_game=True):
-        """
-        Handles seed capture based on game rules when seeds are placed into pits.
-        """
-        pit_index = self.B.action2pit(action)
-        player_idx = current_player - 1  # Adjust index for zero-based list access
-
-        # Check for exactly 4 seeds in the pit after a move and that total seeds exceed a threshold.
-        if self.B.get_seeds(action) == 4:
-            if np.sum(self.B.board) > 8:  # More than 8 seeds on board allows for normal capture
-                # Check whether the pit is in the current player's territory
-                if pit_index in self.B.player_territories[player_idx]:
-                    self.B.stores[player_idx] += 4  # Add seeds to the current player's store
-                else:
-                    self.B.stores[other_player - 1] += 4  # Add seeds to the other player's store
-                self.B.board[pit_index] = 0  # Clear the pit after capture
-            elif np.sum(self.B.board) <= 8:  # Special rule when total seeds on board is 8 or less
-                print("Special condition triggered with 8 seeds on the board.")
-                self.B.stores[player_idx] += np.sum(self.B.board)  # Transfer all seeds to the player's store
-                self.B.board[:] = 0  # Clear the board
+    def calculate_reward(self, player_id):
+        # Initialize reward
+        reward = 0
+        
+        # Reward for capturing more seeds than the opponent
+        seeds_captured = self.current_store_state[player_id - 1] - self.current_store_state[1 - (player_id - 1)]
+        if seeds_captured > 0:
+            reward += seeds_captured * 10  # example: 10 points per seed advantage
+        
+        # Additional reward for winning the game
+        if player_id == self.game_winner():
+            reward += 100  # significant points for winning the game
+        
+        return reward
+    
+    
