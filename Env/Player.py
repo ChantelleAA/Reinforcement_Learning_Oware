@@ -24,15 +24,6 @@ class Player:
             return True
         return False
 
-    # def player_step(self, start_action,  current_player, other_player):
-    #     final_idx = self.state.distribute_seeds(start_action,  current_player, other_player,)
-    #     seeds = self.B.board[final_idx]
-    #     action = start_action
-    #     while self.B.board[final_idx] > 1:
-    #         final_idx = self.state.distribute_seeds(action,  current_player, other_player,)
-    #         action = self.B.board_format.index(final_idx)
-    #     return self.B.board
-
     def player_step(self, start_action, current_player, other_player):
         """
         Executes a player's turn starting from a given action, repeatedly distributing seeds
@@ -40,7 +31,7 @@ class Player:
         """
         action = start_action
         final_idx = self.state.distribute_seeds(action, current_player, other_player)
-        max_iterations = 10  # Set a reasonable limit to prevent infinite loops
+        max_iterations = 30  # Set a reasonable limit to prevent infinite loops
 
         for _ in range(max_iterations):
             if self.B.board[final_idx] <= 1:
