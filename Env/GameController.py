@@ -6,9 +6,6 @@ from .Player import Player
 from .GameState import GameState
 from .RuleEngine import RuleEngine
 
-import warnings
-warnings.filterwarnings('ignore')
-
 
 class GameController:
     """
@@ -51,6 +48,7 @@ class GameController:
         self.action_space_size = 12
         self.state_space_size = 12
         self.cumulative_score = 0
+        self.board_indicies = self.board.board_format
 
     def starting_player(self, how="random"):
         """
@@ -71,40 +69,6 @@ class GameController:
         else:
             starter = 1
             return starter
-
-
-    # def choose_action_player(self, player, state):
-    #     """
-    #     Selects a valid action for the player randomly from the possible moves.
-
-    #     Parameters:
-    #         player (int): The player number for whom to select the action.
-
-    #     Returns:
-    #         int: The action index chosen for the player.
-    #     """
-    #     valid_actions = self.environment.possible_moves(player)
-    #     if not valid_actions:
-    #         raise ValueError("No valid actions available for the current state.")
-        
-    #     if np.random.rand() <= agent.epsilon:
-    #         return random.choice(valid_actions)
-    #     else:
-    #         act_values = agent.model.predict(state)
-    #         return np.argmax(act_values[0])
-        # return random.sample(self.environment.possible_moves(player), 1)[0]
-
-    # def act(self, state):
-    #     valid_actions = self.possible_states(state)
-    #     if not valid_actions:
-    #         raise ValueError("No valid actions available for the current state.")
-        
-    #     if np.random.rand() <= self.epsilon:
-    #         return random.choice(valid_actions)
-    #     else:
-    #         act_values = self.model.predict(state)
-    #         return np.argmax(act_values[0])
-
 
     def game(self, num_of_rounds):
         from env import DQNAgent
@@ -134,8 +98,8 @@ class GameController:
         Side effects:
         - Modifies the internal state of the board, players, and game controller to reflect the progression of the game.
         """
-        agent = DQNAgent(state_size=12, action_size=12) 
-        
+        agent = DQNAgent(state_size=12, action_size=12)
+
         while self.rules.round < num_of_rounds and self.board.turns_completed < self.max_turns:
 
             print(f" START ROUND {self.rules.round}")
@@ -157,9 +121,7 @@ class GameController:
             
             # Implement a round
             while np.sum(self.board.board, axis = None) > 0 or not self.rules.stop_round():
-                print(self.board.board)
-                self.environment.save_all_states()
-                self.environment.save_game_state()
+
                 
                 
                 # record the state
@@ -169,7 +131,13 @@ class GameController:
                 valid_actions = self.environment.possible_moves(current_player)
                 if not valid_actions:
                     raise ValueError("No valid actions available for the current state.")
-                
+                    # print("No valid actions available for the current state.")
+                    # break
+
+                print(self.board.board)
+                self.environment.save_all_states()
+                self.environment.save_game_state()  
+
                 if np.random.rand() <= agent.epsilon:
                     action_c = random.choice(valid_actions)
                 else:
@@ -219,10 +187,14 @@ class GameController:
                 if done:       
                     break
                 
+                try: 
+                    valid_actions = self.environment.possible_moves(other_player)
+                    # if not valid_actions:
+                        # raise ValueError("No valid actions available for the current state.")
+                except Exception as e:
+                    print(f"{e}")
+                    break
 
-                valid_actions = self.environment.possible_moves(other_player)
-                if not valid_actions:
-                    raise ValueError("No valid actions available for the current state.")
                 
                 if np.random.rand() <= agent.epsilon:
                     action_o = random.choice(valid_actions)
@@ -285,113 +257,6 @@ class GameController:
                 print(f"Player {winner} wins!, {self.environment.current_territory_count}")
             else: 
                 print(f" Game ends in draw ")
-                   
-#########################################################################
-
-
-    # def game(self, num_of_rounds):
-    #     from env import DQNAgent
-    #     print("START GAME ...")
-
-    #     # Create an instance of the agent if not already created
-    #     # Assuming `state_size` and `action_size` are predefined or calculated
-    #     agent = DQNAgent(state_size=12, action_size=12)  # Adjust sizes based on your game specifics
-
-    #     for round_number in range(num_of_rounds):
-
-    #         print(f"START ROUND {self.rules.round}\n")
-
-    #         if self.rules.round == 1:
-    #             current_player = self.starting_player("random")
-    #         else:
-    #             current_player = self.starting_player("last_winner")
-    #         other_player = 1 if current_player == 2 else 2
-
-    #         print(f"Player {current_player} starts this round")
-
-    #         self.rules.round += 1
-
-    #         while np.sum(self.board.board) > 0:
-    #             print(self.board.board)
-    #             self.environment.save_all_states()
-    #             self.environment.save_game_state()
-
-    #             state = np.array(self.environment.current_board_state)  # Assuming this is your state representation
-    #             action_c = agent.act(state.reshape(1, -1))  # Agent chooses action based on current state
-    #             print(f"Current player: {current_player}")
-    #             print(f"Player {current_player} action options {self.environment.possible_moves(current_player)}\n")
-    #             print(f"Player {current_player} chooses action: {action_c}\n")
-
-    #             self.player.player_step(action_c, current_player, other_player)
-    #             reward = self.environment.calculate_reward(current_player)  # Calculate reward after the action
-    #             next_state = np.array(self.environment.current_board_state)
-    #             done = self.rules.stop_round() or np.sum(self.environment.current_board_state) == 0
-    #             agent.remember(state.reshape(1, -1), action_c, reward, next_state.reshape(1, -1), done)  # Store the transition in memory
-
-    #             self.environment.save_actions(current_player, action_c)
-    #             print("GAME STATE SAVING ...")
-    #             print(f"{self.environment.current_board_state}")
-    #             self.environment.save_all_states()
-    #             self.environment.save_game_state()
-    #             print("GAME STATE SAVED ...")
-    #             print(f"Total states saved ({len(self.environment.game_state)})\n")
-
-    #             self.environment.switch_player(current_player, other_player)
-
-    #             if done:
-    #                 break
-
-    #             if len(agent.memory) > 32:  # Assuming batch size for learning
-    #                 agent.replay(32)  # Train the agent
-
-    #         if self.board.stores[0] > self.board.stores[1]:
-    #             self.environment.games_won[0] += 1
-    #             self.environment.win_list += [1]
-    #             self.board.territory_count[0] += 1
-    #             self.board.territory_count[1] -= 1
-    #         elif self.board.stores[0] < self.board.stores[1]:
-    #             self.environment.games_won[1] += 1
-    #             self.environment.win_list += [2]
-    #             self.board.territory_count[1] += 1
-    #             self.board.territory_count[0] -= 1
-
-    #         self.environment.rounds_completed += 1
-    #         winner = self.environment.game_winner()
-    #         self.environment.save_winner()
-
-    #         print(f"ROUND ENDS\n")
-    #         print(f"Rounds completed: {self.environment.rounds_completed}")
-
-    #         print('RESET BOARD AND STORES FOR NEW ROUND ...')
-    #         self.board.reset_board()
-    #         self.board.stores = np.array([0, 0])
-
-    #         if self.rules.stop_game():
-    #             print("STOP GAME")
-    #             break
-
-    #         if winner != 0:
-    #             print(f"Player {winner} wins!, {self.environment.current_territory_count}")
-    #         else:
-    #             print("Game ends in draw")
-
-    #     # After all rounds or game end condition
-    #     print(agent.memory)
-    #     if len(agent.memory) > 32:
-    #         agent.replay(32)  # Final training update at the end of the game session
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # def step(self, action):
     #     """
@@ -406,119 +271,224 @@ class GameController:
     #         done (bool): Whether the game or round has ended.
     #         info (dict): Additional information about the step for debugging.
     #     """
-                
-    #     # Save the current state for possible use in debugging
+    #     # Decide on starting player
+    #     print(f"{self.environment.turns_completed}")
+    #     if self.environment.turns_completed == 0:
+
+    #         print(f"First ever step with {self.environment.turns_completed} turn completed\n")
+    #         print(f"Deciding the player who starts ...")
+
+    #         if self.rules.round == 1:  
+    #             self.environment.current_player = self.starting_player("random")
+    #             self.environment.other_player = 1 if self.environment.current_player == 2 else 2
+
+    #             print(f"Round 1 so starting player is chosen randomly: {self.environment.current_player}")
+
+    #         else:
+    #             self.environment.current_player = self.starting_player("last_winner")
+    #             self.environment.other_player = 1 if self.environment.current_player == 2 else 2
+
+    #             print(f"Round {self.rules.round} so starting player is {self.environment.current_player}")
+        
+        
+
+    #     # Save the current state
     #     current_state = np.copy(self.environment.current_board_state)
-    #     print(f"{current_state=}")
-    #     # # Perform the action using existing game logic (this might involve changing the current player, distributing seeds, etc.)
+    #     print(f"Current board state: \n{current_state}, total seeds {np.sum(current_state)}")
+    #     print(f"Current stores state: \n{self.board.stores}")
+
+    #     # set players
     #     current_player = self.environment.current_player
     #     print(f"{current_player=}")
     #     other_player = 2 if current_player == 1 else 1
     #     print(f"{other_player=}")
-    #     self.player.player_step(action, current_player, other_player)
-        
-    #     # Calculate the reward based on the action's outcome (this should be defined according to your game's rules)
+
+    #     # Execute action
+
+    #     print(f"Player {current_player} chooses action: {action}\n")
+
+    #     self.environment.current_board_state = self.player.player_step(action, current_player, other_player)
+    #     # print(f"{self.environment.current_board_state=}")
+    #     # update turns completed
+    #     self.environment.turns_completed+=1
+
+    #     # Calculate the reward based on action
     #     reward = self.environment.calculate_reward(current_player)
-    #     print(f"{reward = }")
-        
-    #     # Update the game state and check if the round/game has ended
-    #     done = self.rules.stop_round() or np.sum(self.environment.current_board_state, axis=None) == 0
-    #     print(f"{done=}")
+    #     # print(f"{reward = }")
+
     #     next_state = np.copy(self.environment.current_board_state)
-    #     print(f"{next_state=}")
+    #     print(f"Next state:\n {next_state}, total seeds {np.sum(next_state)}")
+    #     print(f"Current stores state: \n{self.board.stores}")
+    #     # Update the game state and check if the round/game has ended
+    #     # done = self.rules.stop_round() or np.sum(self.environment.current_board_state, axis=None) == 0
+
+    #     round_done = np.sum(next_state, axis=None) == 0
+    #     print(f"{round_done = }")
+    #     done = self.rules.stop_game()
+        
+    #     print(f"{done=}")
+
     #     # Optionally, gather additional info for debugging or detailed logging
     #     info = {
     #         'current_player': current_player,
     #         'action_taken': action,
-    #         'reward': reward
+    #         'reward': reward,
     #     }
-    #     print(f"{info=}")
+    #     # print(f"{info=}")
+
     #     # Switch players if the game continues
-    #     if not done:
-    #         self.environment.switch_player(current_player, other_player)
+    #     if not done and not round_done:
+    #         print(f"round not over")
+    #         current_player, other_player = self.environment.switch_player(current_player, other_player)
     #         print(f"Switch Player , current player is now {self.environment.current_player}")
-    #     self.cumulative_score += reward
-    #     print(f"{self.cumulative_score = }")
-    #     # Return the necessary information for the RL agent
+    #     elif not done and round_done:
+    #         print(f"Round over")
+    #         if self.board.stores[0] > self.board.stores[1]:
+    #             self.environment.games_won[0] +=1
+    #             self.environment.win_list += [1]
+    #             self.board.territory_count[0] +=1
+    #             self.board.territory_count[1] -=1
+    #             # write function to update territories
+
+    #         elif self.board.stores[0] < self.board.stores[1]:
+    #             self.environment.games_won[1] +=1
+    #             self.environment.win_list += [2]
+    #             self.board.territory_count[1] +=1
+    #             self.board.territory_count[0] -=1
+
+    #         self.environment.rounds_completed += 1
+    #         winner = self.environment.game_winner()
+    #         self.environment.save_winner() 
+
+    #         # print(f"ROUND ENDS\n")
+    #         # print(f"Rounds completed: {self.environment.rounds_completed }")
+
+    #         # print('RESET BOARD AND STORES FOR NEW ROUND ...')
+    #         # self.board.reset_board()
+    #         # self.board.stores = np.array([0, 0])
+
+    #     #     current_player = self.starting_player("last_winner")
+    #     #     other_player = 1 if current_player == 2 else 2
+
+    #     # self.cumulative_score += reward
     #     return next_state, reward, done, info
 
-    # def step(self, action):
 
-    #     if self.rules.round == 1:
-    #         current_player = self.starting_player("random")
-    #     else12current_player = self.starting_player("last_winner")
 
-    #     other_player = 1 if current_player == 2 else 2
-    #     print(f"Action chosen by Player {current_player}: {action}")
-        
-    #     # Apply the chosen action to the game environment by the current player
-    #     self.player.player_step(action, current_player, other_player)
-    #     print(f"Board state after Player {current_player}'s move: {self.board.board}")
-
-    #     # Calculate the immediate reward after the action
-    #     reward = self.environment.calculate_reward(current_player)
-    #     print(f"Reward for Player {current_player}: {reward}")
-
-    #     # Update the state of the game to reflect the changes
-    #     next_state = np.array(self.environment.current_board_state)
-    #     print(f"Next state of the board: {next_state}")
-
-    #     # Determine if the game or round should end
-    #     done = self.rules.stop_round() or np.sum(self.environment.current_board_state) == 0
-    #     print(f"Round/game end check (done): {done}")
-
-    #     # Save actions and game state to history for analysis or replay
-    #     self.environment.save_actions(current_player, action)
-    #     print(f"Actions saved for Player {current_player}")
-
-    #     self.environment.save_game_state()
-    #     print("Game state saved successfully.")
-
-    #     # Optionally, you can handle the switch of players here or manage it externally
-    #     self.environment.switch_player(current_player, other_player)
-    #     print(f"Switching players. Next player: {other_player}")
-
-    #     return next_state, reward, done, {'action': action, 'player': current_player}
-
-    def step(self, action):
+    def step(self, action, player):
         """
-        Applies the given action to the game environment, updates the game state, and returns the result.
-
+        Executes a single game step given an action taken by the current player.
+        
         Parameters:
-            action (int): The action to be taken by the current player.
+            action (int): The action taken by the current player.
 
         Returns:
-            tuple: A tuple containing:
-                - np.array: The new state of the environment after the action.
-                - float: The reward obtained from taking the action.
-                - bool: A flag indicating whether the game is done.
-                - dict: Additional information about the game.
+            next_state (np.array): The state of the game after the action.
+            reward (float): The reward received after taking the action.
+            done (bool): Whether the game or round has ended.
+            info (dict): Additional information about the step for debugging.
         """
-        # Check if the action is valid
-        if action not in self.environment.possible_moves(self.player.current_player):
-            raise ValueError("Invalid action provided.")
+        # Decide on starting player
+        # print(f"{self.environment.turns_completed}")
+        # if self.environment.turns_completed == 0:
 
-        # Apply the action and get the result
-        reward, done = self.rules.apply_action(action)
+        #     print(f"First ever step with {self.environment.turns_completed} turn completed\n")
+        #     print(f"Deciding the player who starts ...")
 
-        # Update the cumulative score
-        self.cumulative_score += reward
+        #     if self.rules.round == 1:  
+        #         self.environment.current_player = self.starting_player("random")
+        #         self.environment.other_player = 1 if self.environment.current_player == 2 else 2
 
-        # Get the new state
-        new_state = np.array(self.environment.current_board_state)
+        #         print(f"Round 1 so starting player is chosen randomly: {self.environment.current_player}")
 
-        # Check if the game is done
-        game_done = done or self.rules.check_game_end()
+        #     else:
+        #         self.environment.current_player = self.starting_player("last_winner")
+        #         self.environment.other_player = 1 if self.environment.current_player == 2 else 2
 
-        # Additional information about the game
+        #         print(f"Round {self.rules.round} so starting player is {self.environment.current_player}")
+        
+        self.environment.current_player = player
+        self.environment.other_player = 2 if self.environment.current_player == 1 else 1
+
+        # Save the current state
+        current_state = np.copy(self.environment.current_board_state)
+        print(f"Current board state: \n{current_state}, total seeds {np.sum(current_state)}")
+        print(f"Current stores state: \n{self.board.stores}")
+
+        # set players
+        current_player = self.environment.current_player
+        print(f"{current_player=}")
+        other_player = 2 if current_player == 1 else 1
+        print(f"{other_player=}")
+
+        # Execute action
+
+        print(f"Player {current_player} chooses action: {action}\n")
+
+        self.environment.current_board_state = self.player.player_step(action, current_player, other_player)
+        # print(f"{self.environment.current_board_state=}")
+        # update turns completed
+        self.environment.turns_completed+=1
+
+        # Calculate the reward based on action
+        reward = self.environment.calculate_reward(current_player)
+        # print(f"{reward = }")
+
+        next_state = np.copy(self.environment.current_board_state)
+        print(f"Next state:\n {next_state}, total seeds {np.sum(next_state)}")
+        print(f"Current stores state: \n{self.board.stores}")
+        # Update the game state and check if the round/game has ended
+        # done = self.rules.stop_round() or np.sum(self.environment.current_board_state, axis=None) == 0
+
+        round_done = np.sum(next_state, axis=None) == 0
+        print(f"{round_done = }")
+        done = self.rules.stop_game()
+        
+        print(f"{done=}")
+
+        # Optionally, gather additional info for debugging or detailed logging
         info = {
-            'round': self.rules.round,
-            'turns_completed': self.board.turns_completed,
-            'current_player': self.player.current_player
+            'current_player': current_player,
+            'action_taken': action,
+            'reward': reward,
         }
+        # print(f"{info=}")
 
-        return new_state, reward, game_done, info
+        # Switch players if the game continues
+        if not done and not round_done:
+            print(f"round not over")
+            current_player, other_player = self.environment.switch_player(current_player, other_player)
+            print(f"Switch Player , current player is now {self.environment.current_player}")
+        elif not done and round_done:
+            print(f"Round over")
+            if self.board.stores[0] > self.board.stores[1]:
+                self.environment.games_won[0] +=1
+                self.environment.win_list += [1]
+                self.board.territory_count[0] +=1
+                self.board.territory_count[1] -=1
+                # write function to update territories
 
+            elif self.board.stores[0] < self.board.stores[1]:
+                self.environment.games_won[1] +=1
+                self.environment.win_list += [2]
+                self.board.territory_count[1] +=1
+                self.board.territory_count[0] -=1
+
+            self.environment.rounds_completed += 1
+            winner = self.environment.game_winner()
+            self.environment.save_winner() 
+
+            print(f"ROUND ENDS\n")
+            print(f"Rounds completed: {self.environment.rounds_completed }")
+
+            print('RESET BOARD AND STORES FOR NEW ROUND ...')
+            self.board.reset_board()
+            self.board.stores = np.array([0, 0])
+
+            current_player = self.starting_player("last_winner")
+            other_player = 1 if current_player == 2 else 2
+
+        return next_state, reward, done, info
 
 
     def reset_game(self):
@@ -539,6 +509,30 @@ class GameController:
         # Return the initial state of the board
         return np.array(self.board.board)
 
+    def reset_round(self):
+        """
+        Resets the game to a clean state at the start of a new round.
+        
+        Returns:
+            np.array: The initial state of the game board.
+        """
+        # Reset the board to its initial configuration
+        self.board.reset_board()  # Assuming there's a method in Board to reset it
+        self.board.stores = np.array([0, 0])
+        # Return the initial state of the board
+        return np.array(self.board.board)
+
+
     def get_score(self):
         # Simply return the cumulative score
         return self.cumulative_score
+    
+    def sample_legal_move(self, state):
+        legal_moves = []
+        for i in range(self.action_space_size):
+            if i in self.environment.valid_moves(state):
+                legal_moves.append(i)
+        return np.random.choice(legal_moves, 1)
+
+    def get_player_turn(self):
+        return self.environment.current_player
