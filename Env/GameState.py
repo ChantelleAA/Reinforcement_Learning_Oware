@@ -68,6 +68,8 @@ class GameState:
         self.all_states_np = np.zeros((16, 1))
         self.stores_list = []
         self.game_winner_list = []
+        self.current_player = None
+        self.other_player = None
 
     def update_win_list(self, player):
         if player == self.round_winner:
@@ -82,6 +84,14 @@ class GameState:
                 if self.B.board[pit_index] != 0 :
                     open_moves.append(i)
         return open_moves
+    
+    def valid_moves(self, state):
+        valid=[]
+        for i in self.actions:
+            pit_index = self.B.action2pit(i)
+            if state[pit_index] != 0 :
+                valid.append(i)
+        return valid
 
     def save_actions(self, player, action):
         if player == 1:
@@ -142,70 +152,31 @@ class GameState:
 
 
     def switch_player(self, current_player, other_player):
-        current_player, other_player = other_player, current_player
-
-    # def distribute_seeds(self, action:int,  current_player, other_player):
-    #     """
-    #     Distributes seeds from a selected pit and captures seeds according to the game rules.
-    #     """
-    #     pit_index = self.B.action2pit(action)
-    #     seeds = self.B.board[pit_index]  # pick seeds from current pit
-    #     self.B.board[pit_index] = 0  # set seeds from current pit to zero
+        k = current_player
+        current_player = other_player
+        other_player = k
+        self.current_player = current_player
+        self.other_player = other_player
+        return current_player, other_player
         
-    #     while seeds > 0 : # iterate over number of seeds picked 
-    #         print('This loop distribution')
-    #         print(self.B.board)
-    #         global next_index
-    #         action = (action + 1) % 12 # navigate to the next pit
-    #         next_index = self.B.board_format[action] 
-    #         self.B.board[next_index] += 1 # drop seed at the point found
-    #         seeds -= 1 # update number of seeds in hand
-    #         if self.B.turns_completed > 1:
-    #             self.capture_seeds(action,  current_player, other_player)
-
-    #             if np.sum(self.B.board) < 4:
-    #                 self.B.board = np.zeros((self.B.nrows, self.B.ncols))
-    #                 break
-
-    #         if seeds == 0:    
-    #             self.capture_seeds(action,  current_player, other_player,during_game=False)
-
-    #         # update current index
-    #         pit_index = next_index
-    #     self.turns_completed +=1 
-    #     return next_index
-
-    # def distribute_seeds(self, action: int, current_player, other_player):
-    #     """
-    #     Distributes seeds from a selected pit and captures seeds according to the game rules.
-    #     """
-    #     pit_index = self.B.action2pit(action)
-    #     seeds = int(self.B.board[pit_index])  # pick seeds from the selected pit
-    #     self.B.board[pit_index] = 0  # empty the selected pit
-
-    #     for _ in range(seeds):  # iterate over the number of seeds picked
-    #         global next_index
-    #         action = (action + 1) % 12  # move to the next pit cyclically
-    #         next_index = self.B.board_format[action]
-    #         self.B.board[next_index] += 1  # drop one seed in the next pit
-
-    #     # After all seeds are distributed, check if it's time to capture seeds
-    #     self.capture_seeds(action, current_player, other_player)
-
-    #     self.B.turns_completed += 1  # increment the turn counter
-    #     return next_index
 
     def distribute_seeds(self, action: int, current_player, other_player):
         """
         Distributes seeds from a selected pit and captures seeds according to the game rules.
         """
+        # print(f"In distribute seeds function")
+        # print(f"Receive action: {action}")
         pit_index = self.B.action2pit(action)
+        # print(f"Onvert to pit index: {pit_index}")
         seeds = int(self.B.board[pit_index])  # pick seeds from the selected pit
+        # print(f"Total seeds in pit is: {seeds}")
+        # print("set pit to zero")
         self.B.board[pit_index] = 0  # empty the selected pit
 
         for _ in range(seeds):  # iterate over the number of seeds picked
             global next_index
             action = (action + 1) % 12  # move to the next pit cyclically
+            # print(f"Action under modulo: {action}")
             next_index = self.B.board_format[action]
             self.B.board[next_index] += 1  # drop one seed in the next pit
 
@@ -231,6 +202,7 @@ class GameState:
         player_idx = current_player - 1  # Get the player's id
 
         if self.B.get_seeds(action) == 4 and np.sum(self.B.board, axis=None) > 8: # Condition checking if there is 4 in the pit where the player just dropped his seed
+            # print(f"In capture: {self.B.board}")
             if during_game: # if this capture is happening during the course of a game,
 
                 if pit_index in self.B.player_territories[player_idx]: # if the pit is the player's territory
@@ -255,19 +227,40 @@ class GameState:
             self.B.board[self.B.board > 0] = 0
             print(f"Board after:\n{self.B.board}")
 
+        # else:
+        #     print(f"Board state: {self.B.board}")
+        #     print(f"total seeds after capture: {np.sum(self.B.board)}")
+
+
     def calculate_reward(self, player_id):
+        
+        INVALID_ACTION_PENALTY = -10
+        
         # Initialize reward
         reward = 0
+        opponent_id = 1 if player_id == 2 else 2
         
         # Reward for capturing more seeds than the opponent
+        print(f"CALCULATING REWARD ...\n")
+        # print(f"Current store of player {player_id}: {self.current_store_state[player_id - 1]}\n")
+        # print(f"Current store state of player {opponent_id} : {self.current_store_state[opponent_id - 1]} \n")
+        
         seeds_captured = self.current_store_state[player_id - 1] - self.current_store_state[1 - (player_id - 1)]
         if seeds_captured > 0:
             reward += seeds_captured * 10  # example: 10 points per seed advantage
+        
+        # Check for invalid action penalty
+        if reward == INVALID_ACTION_PENALTY:
+            return reward
         
         # Additional reward for winning the game
         if player_id == self.game_winner():
             reward += 100  # significant points for winning the game
         
+        # Symmetric reward for the opponent
+        opponent_reward = -reward
+
+        # return reward, opponent_reward        
         return reward
     
     
