@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
-def test_two_dqn_agents(agent1, agent2, game_controller, test_episodes):
+def test_two_dqn_agents(agent1, agent2, game_controller,test_episodes):
     agent1_rewards = []
     agent2_rewards = []
     wins = [0, 0]  # Wins for agent1 and agent2 respectively
@@ -25,7 +25,8 @@ def test_two_dqn_agents(agent1, agent2, game_controller, test_episodes):
             act_values = current_agent.model.predict(state)
             action = np.argmax(act_values[0])
 
-            next_state, reward, done, info = game_controller.step(action, 1)  # Assuming step() method correctly alternates players internally
+            player_id = 1 if current_agent == agent1 else 2
+            next_state, reward, done, info = game_controller.step(action, player_id)  # Assuming step() method correctly alternates players internally
             next_state = np.reshape(next_state, [1, current_agent.state_size])
             
             # Accumulate rewards for the appropriate agent
@@ -37,7 +38,8 @@ def test_two_dqn_agents(agent1, agent2, game_controller, test_episodes):
             # Both agents learn from the experience, regardless of whose turn it is
             if not done:
                 current_agent.remember(state, action, reward, next_state, done)
-                current_agent.replay(32)  # Assuming a batch size of 32
+                if len(current_agent.memory) > 32:
+                    current_agent.replay(32)  # Assuming a batch size of 32
 
             state = next_state
             step += 1
@@ -65,13 +67,11 @@ def test_two_dqn_agents(agent1, agent2, game_controller, test_episodes):
 game_controller = GameController()  
 agent1 = DQNAgent(state_size=12, action_size=12, player_id=1)
 agent2 = DQNAgent(state_size=12, action_size=12, player_id=2)
-# agent1.model.load_weights('saved_weights_agent1_epoch.h5')
-# agent2.model.load_weights('saved_weights_agent2_epoch.h5')
-agent1.model.load_weights('saved_weights_epoch_4.h5') 
-agent2.model.load_weights('saved_weights_epoch_8.h5') 
 
+agent1.model.load_weights('./saved_weights/saved_weights_epoch_1.h5') 
+agent2.model.load_weights('./saved_weights/saved_weights_epoch_2.h5') 
 
 # Run test
-agent1_rewards, agent2_rewards = test_two_dqn_agents(agent1, agent2, game_controller, test_episodes=100)
+agent1_rewards, agent2_rewards = test_two_dqn_agents(agent1, agent2, game_controller, test_episodes=1)
 print("Agent 1 Average Reward:", np.mean(agent1_rewards))
 print("Agent 2 Average Reward:", np.mean(agent2_rewards))
