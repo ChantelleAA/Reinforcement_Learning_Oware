@@ -3,9 +3,16 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 import warnings
+import datetime
 warnings.filterwarnings('ignore')
+import tensorflow as tf
 
 INVALID_ACTION_PENALTY = -1
+
+log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1, update_freq='batch')
+file_writer = tf.summary.create_file_writer(log_dir)
+
 
 def zero_row_exists(state, board):
     for i in range(board.nrows):
@@ -57,19 +64,25 @@ def train_agents(episodes, game_controller, save_weights_path, save_model_path):
     rewards_learner = []
     rewards_random = []
 
+    # Training loop
+    batch_size = 32  # Example batch size
+
     for e in range(episodes):
         state = game_controller.reset_game()
         state = np.reshape(state, [1, state_size])
         done = False
+        episode_reward = 0
+
         while not done:
             
             # Learning agent's turn (DQN Agent)
             action1, penalty1 = dqn_act(state, learning_agent, game_controller.board)
-
+            print("HERE")
             next_state, reward1, done, info = game_controller.step(action1, player=1)
             next_state = np.reshape(next_state, [1, state_size])
             learning_agent.remember(state, action1, reward1 + penalty1, next_state, done)
             state = next_state
+            episode_reward += reward1
             rewards_learner.append(reward1)
 
             if done:
@@ -80,23 +93,31 @@ def train_agents(episodes, game_controller, save_weights_path, save_model_path):
             next_state, reward2, done, info = game_controller.step(action2, player=2)
             next_state = np.reshape(next_state, [1, state_size])
             state = next_state  # No memory or learning for the random agent
+            episode_reward += reward2
             rewards_random.append(reward2)
 
             # Only train the learning agent
-            if len(learning_agent.memory) > 32:
-                learning_agent.replay(32)
+            if len(learning_agent.memory) > batch_size:
+                learning_agent.replay(batch_size)
 
             if done:
                 print(f"Episode: {e+1}/{episodes}, Epsilon: {learning_agent.epsilon:.2f}")
                 break
-
+            
         learning_agent.save(save_weights_path.format(e+1))
-        learning_agent.save_model(save_model_path.format(e+1))
 
+        # Log the episode reward
+        with file_writer.as_default():
+            tf.summary.scalar('Episode Reward', episode_reward, step=e)
+            tf.summary.flush()
+
+    learning_agent.save_model(save_model_path)
+        
     print("Training completed and model weights saved for the learning agent.")
     plt.plot(rewards_learner, "r" , label="DQN agent")
     plt.plot(rewards_random, "b" , label="Random agent")
     plt.legend()
     plt.show()
+
 game_controller = GameController()
-train_agents(200, game_controller, './saved_weights/saved_weights_epoch_{}.h5', './saved_weights/saved_model_epoch_{}.json')
+train_agents(2000, game_controller, './saved_weights/saved_weights_epoch_{}.h5', './saved_weights/saved_model_epoch_{}.json')
