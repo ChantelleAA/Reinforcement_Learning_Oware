@@ -1,6 +1,8 @@
 # Playing Oware Nam-nam with Reinforcement Learning
 ![image](https://github.com/ChantelleAA/Reinforcement_Learning_Oware/assets/115734837/1f9f3e49-01cd-49a9-becb-ab79b6ef00dd)
-
+[Source](https://owarejam.wordpress.com/about/)
+[Rules of the game: article](http://www.oware.org/nam_nam.asp)
+[Rules of the game: video](https://www.youtube.com/watch?v=LQE2b5T5Cr4)
 ## Overview
 
 This GitHub repository hosts an implementation of the traditional African board game Oware (also known as Mancala) developed to support reinforcement learning experiments. The implementation is structured using several Python classes that model the game's mechanics, and it is built atop popular libraries such as NumPy and gym.
