@@ -29,7 +29,7 @@ class RuleEngine:
             board (Board): The game board which holds the state and configuration of seeds and pits.
             state (GameState): The object managing the overall state of the game, including scores and turns.
         """
-        self.B = board
+        self.board = board
         self.state = state
         self.round = 1
         self.turn = 1
@@ -47,7 +47,7 @@ class RuleEngine:
             bool: True if the action is valid, False otherwise.
         """
         # check if the action is valid for a player
-        return action in self.state.possible_moves(player)
+        return action in self.state.possible_moves(player, self.board.board)
 
     def stop_round(self):
         """
@@ -56,7 +56,18 @@ class RuleEngine:
         Returns:
             bool: True if the board is empty and the round should stop, False otherwise.
         """
-        return np.sum(self.B.board, axis=None) == 0
+        early_stop = (self.board.stores[0] > 24 and self.board.stores[1] < 24) or (self.board.stores[1] > 24 and self.board.stores[0] < 24)
+        stop_criteria = np.sum(self.board.board, axis=None) == 0
+        return early_stop or stop_criteria
+
+    # def stop_round(self):
+    #     """
+    #     Determines if the current round should be stopped, typically when no seeds are left to play.
+
+    #     Returns:
+    #         bool: True if the board is empty and the round should stop, False otherwise.
+    #     """
+    #     return np.sum(self.board.board, axis=None) == 0
 
     def stop_game(self, num_rounds):
         """
@@ -65,5 +76,8 @@ class RuleEngine:
         Returns:
             bool: True if the game should end, for example, if a player's territory count reaches a set threshold.
         """
-        return self.B.territory_count[1] == 11 or self.B.territory_count[0] == 11
-        # return self.B.territory_count[1] == 12 or self.B.territory_count[0] == 12 or self.round == num_rounds
+        condition1 = self.board.territory_count[1] == 11 or self.board.territory_count[0] == 11 
+        condition2 = self.board.territory_count[1] == 8 or self.board.territory_count[0] == 8 
+
+        return condition2 
+        # return self.board.territory_count[1] == 12 or self.board.territory_count[0] == 12 or self.round == num_rounds
