@@ -74,40 +74,15 @@ class GameController:
             return starter
 
     def game(self, num_of_rounds= num_of_rounds):
-        from env import DQNAgent
+        from ..agent import DQNAgent
         print(f"START GAME ...")
 
-        """
-        Executes the game loop, managing rounds and player turns until game completion conditions are met.
-
-        This loop orchestrates the game flow by:
-        1. Determining which player starts each round, alternating starting players based on random choice for the first round and the winner of the previous round for subsequent rounds.
-        2. Incrementing the round count and processing individual turns within each round until there are no seeds left on the board or a stopping condition is triggered.
-        3. Each player's turn involves choosing a valid action (pit from which to distribute seeds), distributing seeds from the selected pit, and potentially capturing seeds from the board.
-        4. After each action, the game state is saved to record the actions and board state.
-        5. The loop checks if the round should stop (based on the board state or other game rules), and if so, breaks out of the round loop to start a new round.
-        6. After the completion of each round, the loop checks for game end conditions such as reaching a maximum number of rounds or a specific condition that defines the end of the game.
-        7. Updates the game statistics, including the number of games won by each player and updates to territory counts based on the results of the round.
-        8. Resets the board to its initial state at the end of each round and prepares for the next round if the game has not reached its conclusion.
-
-        Parameters:
-        - num_of_rounds (int): Maximum number of rounds to be played.
-        - self.max_turns (int): Maximum number of turns allowed, to prevent potentially infinite games.
-
-        Outputs:
-        - Prints the current round and turn, the state of the board after each turn, and messages at the end of each round and game.
-        - Updates internal state to track rounds, player scores, and other game metrics.
-
-        Side effects:
-        - Modifies the internal state of the board, players, and game controller to reflect the progression of the game.
-        """
-        
         agent = DQNAgent(state_size=12, action_size=12, player_id=0)
 
         while self.rules.round < num_of_rounds and self.board.turns_completed < self.max_turns:
 
             print(f" START ROUND {self.rules.round}\n")
-            print(f"New Board: {self.environment.current_board_state}")
+            print(f"New Board: \n{self.environment.current_board_state}")
 
             # Decision on who starts the round
             if self.rules.round == 1:
@@ -170,6 +145,8 @@ class GameController:
                 print("GAME STATE SAVED ...")
                 print(f"Total states saved ({len(self.environment.game_state)})\n")
 
+                print(f"Current stores state:\n {self.board.stores}")
+                print(f"Current territory count:\n {self.environment.current_territory_count}")
                 # switch players
                 print(f"Switch Players ...")
                 self.environment.switch_player(current_player, other_player)
@@ -263,9 +240,9 @@ class GameController:
 
         # set players
         current_player = self.environment.current_player
-        print(f"{current_player=}")
+        # print(f"{current_player=}")
         other_player = 2 if current_player == 1 else 1
-        print(f"{other_player=}")
+        # print(f"{other_player=}")
 
         print(f"Player {current_player} chooses action: {action}\n")
 
@@ -289,10 +266,6 @@ class GameController:
                 print(f"Rounds completed: {self.environment.rounds_completed }")
 
                 print('RESET BOARD AND STORES FOR NEW ROUND ...')
-                # next_state = self.board.reset_board()
-                # self.environment.current_board_state = next_state
-                # self.board.stores = np.array([0, 0])
-                # self.environment.stores_list = []
                 next_state = self.reset_round()
 
                 current_player = self.starting_player("last_winner")
@@ -302,10 +275,6 @@ class GameController:
             next_state = self.player.player_step(action, current_player, other_player)
             self.environment.current_board_state = next_state
             self.environment.update_stores_list()
-            # print(f"Next state:\n {next_state}, total seeds {np.sum(next_state)}")
-            # print(f"Current stores state: \n{self.board.stores}")
-            self.environment.__str__()
-            # update turns completed
             self.environment.turns_completed+=1
 
             # Calculate the reward based on action
@@ -316,16 +285,18 @@ class GameController:
         
         done = self.rules.stop_game(num_of_rounds)
 
-        print(f"{round_done = }")
+        # print(f"{round_done = }")
        
-        print(f"{self.rules.round=}")
+        # print(f"{self.rules.round=}")
         print(f"Territory count: {self.board.territory_count}")
-        print(f"{done=}")
+        # print(f"{done=}")
         print(f"Territory indices: {self.board.player_territories}")
+
         info = {
             'current_player': current_player,
             'action_taken': action,
             'reward': reward,
+            'winner': None
         }
 
         if not done and not round_done:
@@ -348,10 +319,6 @@ class GameController:
             print(f"Territory count: {self.board.territory_count}")
 
             print('RESET BOARD AND STORES FOR NEW ROUND ...')
-            # next_state = self.board.reset_board()
-            # self.environment.current_board_state = next_state
-            # self.board.stores = np.array([0, 0])
-            # self.environment.stores_list = []
             next_state = self.reset_round()
 
             current_player = self.starting_player("last_winner")
@@ -359,6 +326,7 @@ class GameController:
 
         elif done and round_done:
             winner = self.environment.game_winner()
+            info["winner"] = winner
             self.reset_game()
             print("Game is done")
             print(f"Territory count: {self.board.territory_count}")
@@ -366,10 +334,14 @@ class GameController:
                 print("Game ends in a draw")
             else:        
                 print(f"Winner is player : {winner}")
+
+        else:
+            winner = self.environment.game_winner()
+            info["winner"] = winner
         return next_state, reward, done, info
 
     def update_territories(self):
-        print("Territoris updating")
+        print("Territories updating")
         if self.board.stores[0] > self.board.stores[1]:
             self.environment.games_won[0] +=1
             self.environment.win_list += [1]
@@ -396,7 +368,7 @@ class GameController:
             np.array: The initial state of the game board.
         """
         # Reset the board to its initial configuration
-        self.board.reset_board()  # Assuming there's a method in Board to reset it
+        self.board.reset_board()
         self.environment.rounds_completed = 0
         self.rules.round = 0
         self.environment.total_games_played += 1
@@ -422,7 +394,6 @@ class GameController:
         self.environment.current_board_state = self.board.board
         self.board.stores = np.array([0, 0])
         self.environment.stores_list = []
-
         # Return the initial state of the board
         return np.array(self.board.board)
 
