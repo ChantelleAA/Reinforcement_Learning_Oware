@@ -70,27 +70,6 @@ class GameState:
         self.current_player = None
         self.other_player = None
 
-        def __str__(self):
-            board_str = 'Current Board State:\n'
-            # Assuming a 2-row board for Oware
-            top_row = self.current_board_state[0,:]  # First player's pits
-            bottom_row = self.current_board_state[1,:]  # Second player's pits
-
-            # Format the top row
-            board_str += 'Player 1: ' + ' '.join(f'{seed:02d}' for seed in top_row) + '\n'
-            # Add a separator
-            board_str += '          ' + '----' * len(top_row) + '\n'
-            # Format the bottom row
-            board_str += 'Player 2: ' + ' '.join(f'{seed:02d}' for seed in bottom_row) + '\n'
-
-            # Add scores and territory counts side by side
-            board_str += '\nScores and Territory:\n'
-            board_str += f'Player 1: Score {self.current_store_state[0]}, Territory {self.current_territory_count[0]}\n'
-            board_str += f'Player 2: Score {self.current_store_state[1]}, Territory {self.current_territory_count[1]}\n'
-
-            return board_str
-
-
     def update_win_list(self, player):
         if player == self.round_winner:
             self.win_list += [player]
@@ -175,10 +154,9 @@ class GameState:
             return winner
 
     def game_winner(self):
-        
-        if self.current_territory_count[0] > self.current_territory_count[1]:
+        if self.board.territory_count[0] > self.board.territory_count[1]:
             winner = 1
-        elif self.current_territory_count[0] < self.current_territory_count[1]:
+        elif self.board.territory_count[0] < self.board.territory_count[1]:
             winner = 2
         else:
             winner = 0
@@ -294,7 +272,9 @@ class GameState:
         print(f"CALCULATING REWARD ...\n")
         CAPTURE_REWARD = 40
         ROUND_WIN_REWARD = 80
-        GAME_WIN_REWARD = 480
+        GAME_WIN_REWARD = 700
+        NON_CAPTURE_PENALTY = 0
+        ROUND_LOSS_PENALTY = -1
 
         player_id = player - 1
         reward = 0        
@@ -305,10 +285,15 @@ class GameState:
             seeds_captured = captures[player_id]
 
             if seeds_captured > 0:
-                reward += (seeds_captured/4)*CAPTURE_REWARD
+                reward += (seeds_captured)*CAPTURE_REWARD
+            elif seeds_captured == 0:
+                reward += NON_CAPTURE_PENALTY
 
             if player == self.round_winner():
                 reward += ROUND_WIN_REWARD
+
+            elif player != self.round_winner():
+                reward += ROUND_LOSS_PENALTY
             
             if player == self.game_winner():
                 reward += GAME_WIN_REWARD  
