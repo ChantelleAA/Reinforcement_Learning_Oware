@@ -1,4 +1,5 @@
-# Oware Game Reinforcement Learning Environment
+# Playing Oware Nam-nam with Reinforcement Learning
+![image](https://github.com/ChantelleAA/Reinforcement_Learning_Oware/assets/115734837/1f9f3e49-01cd-49a9-becb-ab79b6ef00dd)
 
 ## Overview
 
