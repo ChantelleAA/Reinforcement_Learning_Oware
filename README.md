@@ -130,7 +130,7 @@ Reinforcement_Learning_Oware/
 
 ### Board Class
 
-The `Board` class is a fundamental component of the Oware nam-Nam environment, responsible for managing the board layout, actions, and score tracking. Here’s a summary of its key features and methods:
+The `Board` class is responsible for managing the board layout.
 
 #### Key Features
 
@@ -154,7 +154,6 @@ The `Board` class is a fundamental component of the Oware nam-Nam environment, r
 - **`set_seeds`**: Sets the number of seeds at the specified action's pit to a new value.
 - **`update_seeds`**: Updates the number of seeds at the specified action's pit by adding a new value.
 
-This class interacts directly with the game logic and is central to the functionality of the Oware game environment.
 
 ### Player Class
 
@@ -183,8 +182,6 @@ This class interacts directly with the game logic and is central to the function
     - `current_player` (int) - The number of the current player (1 or 2).
     - `other_player` (int) - The number of the other player (1 or 2).
   - **Returns**: The updated board state after the player's turn.
-
-This class is crucial for managing the interactions of players with the board, facilitating the gameplay by handling moves, territory management, and determining round winners. The `player_step` method ensures the proper execution of a player's move according to the rules of the game.
 
 ### RuleEngine Class
 
@@ -222,8 +219,6 @@ This class is crucial for managing the interactions of players with the board, f
   - **Parameters**:
     - `num_rounds` (int): The number of rounds to be played.
   - **Returns**: `True` if the game should end, for example, if a player's territory count reaches a set threshold.
-
-This class is crucial for enforcing the rules of the game, validating player actions, and determining the conditions for ending rounds and the game. The `RuleEngine` ensures that the gameplay adheres to the defined rules and progresses correctly.
 
 ### GameState Class
 
@@ -388,7 +383,335 @@ This class is crucial for enforcing the rules of the game, validating player act
 - **`get_player_turn()`**: Gets the current player's turn.
   - **Returns**: The current player number (int).
 
-This class orchestrates the game by managing rounds, processing player actions, updating the state, and determining when the game ends based on the rules defined in the `RuleEngine`. The `game()` method is the core function that runs the game loop, ensuring that the game progresses correctly and adheres to the rules.
+### DQNAgent Class
+
+#### Key Features
+
+- **Deep Q-Learning**: Implements a neural network-based Q-learning agent to play the Oware game.
+- **Experience Replay**: Stores experiences in a memory buffer for training the model.
+- **Exploration-Exploitation Tradeoff**: Balances between exploring new actions and exploiting known rewards through an epsilon-greedy policy.
+
+#### Attributes
+
+- **`state_size`**: Size of the state space (input to the neural network).
+- **`action_size`**: Size of the action space (output of the neural network).
+- **`player_id`**: Identifier for the player (1 or 2).
+- **`memory`**: Memory buffer (deque) for storing experiences.
+- **`gamma`**: Discount factor for future rewards.
+- **`epsilon`**: Exploration rate for the epsilon-greedy policy.
+- **`epsilon_min`**: Minimum value of epsilon to ensure some level of exploration.
+- **`epsilon_decay`**: Decay rate for epsilon to reduce exploration over time.
+- **`learning_rate`**: Learning rate for the neural network optimizer.
+- **`model`**: Neural network model for Q-learning.
+
+#### Methods
+
+- **`__init__(state_size, action_size, player_id)`**: Initializes the DQN agent with the specified state and action sizes, and player ID.
+  - **Parameters**:
+    - `state_size` (int): Size of the state space.
+    - `action_size` (int): Size of the action space.
+    - `player_id` (int): Identifier for the player.
+
+- **`_build_model()`**: Builds the neural network model for the DQN agent.
+  - **Returns**: A compiled Keras model.
+
+- **`remember(state, action, reward, next_state, done)`**: Stores an experience in the memory buffer.
+  - **Parameters**:
+    - `state` (np.array): The current state.
+    - `action` (int): The action taken.
+    - `reward` (float): The reward received.
+    - `next_state` (np.array): The state resulting from the action.
+    - `done` (bool): Whether the episode has ended.
+
+- **`dqn_act(state, agent, board)`**: Determines an action based on the current state using an epsilon-greedy policy.
+  - **Parameters**:
+    - `state` (np.array): The current state.
+    - `agent` (DQNAgent): The DQN agent.
+    - `board` (Board): The game board.
+  - **Returns**: A tuple of the chosen action and any associated penalty (if applicable).
+
+- **`replay(batch_size)`**: Trains the model on a batch of experiences from the memory buffer.
+  - **Parameters**: `batch_size` (int) - The number of experiences to sample for training.
+  - **Returns**: The average loss over the training batch.
+
+- **`save(name)`**: Saves the model weights to a file.
+  - **Parameters**: `name` (str) - The name of the file to save the weights.
+
+- **`load(name)`**: Loads the model weights from a file.
+  - **Parameters**: `name` (str) - The name of the file to load the weights from.
+
+- **`save_model(name)`**: Saves the model architecture to a file.
+  - **Parameters**: `name` (str) - The name of the file to save the model architecture.
+
+- **`load_model(name)`**: Loads the model architecture from a file.
+  - **Parameters**: `name` (str) - The name of the file to load the model architecture from.
+  - **Returns**: The loaded model architecture (json).
+
+### DDQNAgent Class
+
+#### Key Features
+
+- **Double Deep Q-Learning**: Implements a neural network-based Double DQN agent to play the Oware game.
+- **Experience Replay**: Stores experiences in a memory buffer for training the model.
+- **Exploration-Exploitation Tradeoff**: Balances between exploring new actions and exploiting known rewards through an epsilon-greedy policy.
+- **Target Network**: Utilizes a target network to stabilize training by reducing the correlation between the Q-value and target value.
+
+#### Attributes
+
+- **`state_size`**: Size of the state space (input to the neural network).
+- **`action_size`**: Size of the action space (output of the neural network).
+- **`player_id`**: Identifier for the player (1 or 2).
+- **`memory`**: Memory buffer (deque) for storing experiences.
+- **`gamma`**: Discount factor for future rewards.
+- **`epsilon`**: Exploration rate for the epsilon-greedy policy.
+- **`epsilon_min`**: Minimum value of epsilon to ensure some level of exploration.
+- **`epsilon_decay`**: Decay rate for epsilon to reduce exploration over time.
+- **`learning_rate`**: Learning rate for the neural network optimizer.
+- **`optimizer`**: The optimizer used for training the neural network.
+- **`model`**: Neural network model for Q-learning.
+- **`target_model`**: Target network model for stabilizing training.
+
+#### Methods
+
+- **`__init__(state_size, action_size, player_id, learning_rate=0.001, gamma=0.9, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.999)`**: Initializes the DDQN agent with the specified parameters.
+  - **Parameters**:
+    - `state_size` (int): Size of the state space.
+    - `action_size` (int): Size of the action space.
+    - `player_id` (int): Identifier for the player.
+    - `learning_rate` (float): Learning rate for the optimizer.
+    - `gamma` (float): Discount factor for future rewards.
+    - `epsilon` (float): Initial exploration rate.
+    - `epsilon_min` (float): Minimum value of epsilon.
+    - `epsilon_decay` (float): Decay rate for epsilon.
+
+- **`_build_model()`**: Builds the neural network model for the DDQN agent.
+  - **Returns**: A compiled Keras model.
+
+- **`update_target_model()`**: Updates the weights of the target network to match the model network.
+
+- **`remember(state, action, reward, next_state, done)`**: Stores an experience in the memory buffer.
+  - **Parameters**:
+    - `state` (np.array): The current state.
+    - `action` (int): The action taken.
+    - `reward` (float): The reward received.
+    - `next_state` (np.array): The state resulting from the action.
+    - `done` (bool): Whether the episode has ended.
+
+- **`ddqn_act(state, agent, board)`**: Determines an action based on the current state using an epsilon-greedy policy.
+  - **Parameters**:
+    - `state` (np.array): The current state.
+    - `agent` (DDQNAgent): The DDQN agent.
+    - `board` (Board): The game board.
+  - **Returns**: A tuple of the chosen action and any associated penalty (if applicable).
+
+- **`replay(batch_size)`**: Trains the model on a batch of experiences from the memory buffer.
+  - **Parameters**: `batch_size` (int) - The number of experiences to sample for training.
+  - **Returns**: The average loss over the training batch.
+
+- **`adjust_learning_rate(new_lr)`**: Adjusts the learning rate of the optimizer.
+  - **Parameters**: `new_lr` (float) - The new learning rate.
+
+- **`save(name)`**: Saves the model weights to a file.
+  - **Parameters**: `name` (str) - The name of the file to save the weights.
+
+- **`load(name)`**: Loads the model weights from a file.
+  - **Parameters**: `name` (str) - The name of the file to load the weights from.
+
+- **`save_model(name)`**: Saves the model architecture to a file.
+  - **Parameters**: `name` (str) - The name of the file to save the model architecture.
+
+- **`load_model(name)`**: Loads the model architecture from a file.
+  - **Parameters**: `name` (str) - The name of the file to load the model architecture from.
+  - **Returns**: The loaded model architecture (json).
+
+### RandomAgent Class
+
+#### Key Features
+
+- **Random Action Selection**: Implements an agent that selects valid actions randomly for playing the Oware game.
+- **Validation of Actions**: Ensures that actions taken are valid based on the current state of the game board.
+
+#### Attributes
+
+- **`action_size`**: Size of the action space.
+- **`board`**: An instance of the `Board` class representing the game board.
+- **`player_id`**: Identifier for the player (defaults to `PLAYER_NUM_RANDOM`).
+
+#### Methods
+
+- **`__init__(action_size, board, player_id=PLAYER_NUM_RANDOM)`**: Initializes the RandomAgent with the specified action size, board, and player ID.
+  - **Parameters**:
+    - `action_size` (int): Size of the action space.
+    - `board` (Board): The game board instance.
+    - `player_id` (int): Identifier for the player.
+
+- **`act(state, board)`**: Determines a random valid action based on the current state.
+  - **Parameters**:
+    - `state` (np.array): The current state of the game board.
+    - `board` (Board): The game board instance.
+  - **Returns**: A tuple of the chosen action and any associated penalty (if applicable).
+
+- **`zero_row_exists(state, board)`**: Checks if any row on the board is empty.
+  - **Parameters**:
+    - `state` (np.array): The current state of the game board.
+    - `board` (Board): The game board instance.
+  - **Returns**: `True` if any row is empty, `False` otherwise.
+
+- **`valid_moves(state, board)`**: Returns a list of valid moves based on the current board state.
+  - **Parameters**:
+    - `state` (np.array): The current state of the game board.
+    - `board` (Board): The game board instance.
+  - **Returns**: A list of valid moves (list).
+
+- **`possible_states(player, state, board)`**: Returns a list of possible moves for the specified player based on the current board state.
+  - **Parameters**:
+    - `player` (int): The player number.
+    - `state` (np.array): The current state of the game board.
+    - `board` (Board): The game board instance.
+  - **Returns**: A list of possible moves (list).
+
+### AlphaZeroAgent Class
+
+#### Key Features
+
+- **AlphaZero Implementation**: Combines Monte Carlo Tree Search (MCTS) with a neural network to play the Oware game.
+- **Experience Replay**: Stores experiences in a memory buffer for training the model.
+- **Exploration-Exploitation Tradeoff**: Balances between exploring new actions and exploiting known rewards through an epsilon-greedy policy.
+
+#### Attributes
+
+- **`state_size`**: Size of the state space (input to the neural network).
+- **`action_size`**: Size of the action space (output of the neural network).
+- **`player_id`**: Identifier for the player.
+- **`model`**: Neural network model for the AlphaZero agent.
+- **`memory`**: Memory buffer (deque) for storing experiences.
+- **`gamma`**: Discount factor for future rewards.
+- **`epsilon`**: Exploration rate for the epsilon-greedy policy.
+- **`epsilon_min`**: Minimum value of epsilon to ensure some level of exploration.
+- **`epsilon_decay`**: Decay rate for epsilon to reduce exploration over time.
+- **`learning_rate`**: Learning rate for the neural network optimizer.
+
+#### Methods
+
+- **`__init__(state_size, action_size, player_id)`**: Initializes the AlphaZero agent with the specified state and action sizes, and player ID.
+  - **Parameters**:
+    - `state_size` (int): Size of the state space.
+    - `action_size` (int): Size of the action space.
+    - `player_id` (int): Identifier for the player.
+
+- **`build_model()`**: Builds the neural network model for the AlphaZero agent.
+  - **Returns**: A compiled Keras model.
+
+- **`remember(state, policy, value)`**: Stores an experience in the memory buffer.
+  - **Parameters**:
+    - `state` (np.array): The current state.
+    - `policy` (np.array): The policy vector (action probabilities).
+    - `value` (float): The value of the state.
+
+- **`act(state)`**: Determines an action based on the current state using the policy network.
+  - **Parameters**: `state` (np.array) - The current state.
+  - **Returns**: The chosen action (int).
+
+- **`replay(batch_size)`**: Trains the model on a batch of experiences from the memory buffer.
+  - **Parameters**: `batch_size` (int) - The number of experiences to sample for training.
+
+- **`save(name)`**: Saves the model weights to a file.
+  - **Parameters**: `name` (str) - The name of the file to save the weights.
+
+- **`load(name)`**: Loads the model weights from a file.
+  - **Parameters**: `name` (str) - The name of the file to load the weights from.
+
+- **`save_model(name)`**: Saves the model architecture to a file.
+  - **Parameters**: `name` (str) - The name of the file to save the model architecture.
+
+- **`load_model(name)`**: Loads the model architecture from a file.
+  - **Parameters**: `name` (str) - The name of the file to load the model architecture from.
+  - **Returns**: The loaded model architecture (json).
+
+### MCTS Policy
+
+#### Function: `mcts_policy(state, agent, simulations=100)`
+
+- **Purpose**: A simplified Monte Carlo Tree Search (MCTS) policy for selecting actions.
+- **Parameters**:
+  - `state` (np.array): The current state.
+  - `agent` (AlphaZeroAgent): The AlphaZero agent.
+  - `simulations` (int): The number of simulations to run (default is 100).
+- **Returns**: Action probabilities (np.array).
+
+This function runs a simplified MCTS by simulating random actions and counting their occurrences to estimate action probabilities. This is a placeholder for a more sophisticated MCTS implementation.
+
+### A3CAgent Class
+
+#### Key Features
+
+- **Asynchronous Advantage Actor-Critic (A3C)**: Implements an A3C agent for playing the Oware game.
+- **Parallel Training**: Utilizes multiple worker threads to train the global model asynchronously.
+- **Shared Global Model**: Workers share a global model and periodically update it with gradients computed locally.
+
+#### Attributes
+
+- **`state_size`**: Size of the state space (input to the neural network).
+- **`action_size`**: Size of the action space (output of the neural network).
+- **`global_model`**: Shared global neural network model.
+- **`optimizer`**: Optimizer for training the neural network.
+
+#### Methods
+
+- **`__init__(state_size, action_size)`**: Initializes the A3CAgent with the specified state and action sizes.
+  - **Parameters**:
+    - `state_size` (int): Size of the state space.
+    - `action_size` (int): Size of the action space.
+
+- **`build_model()`**: Builds the neural network model for the A3C agent.
+  - **Returns**: A compiled Keras model.
+
+- **`train(env_name, num_workers)`**: Trains the A3C agent using multiple workers.
+  - **Parameters**:
+    - `env_name` (str): Name of the environment.
+    - `num_workers` (int): Number of worker threads to use for training.
+  - **Returns**: A list of rewards obtained during training.
+
+### Worker Class
+
+#### Key Features
+
+- **Local Model**: Each worker maintains a local copy of the neural network model.
+- **Environment Interaction**: Each worker interacts with the game environment independently.
+- **Global Model Update**: Workers periodically update the global model with computed gradients.
+
+#### Attributes
+
+- **`global_model`**: Shared global neural network model.
+- **`optimizer`**: Optimizer for training the neural network.
+- **`local_model`**: Local neural network model for the worker.
+- **`worker_idx`**: Index of the worker.
+- **`env`**: Instance of the game controller.
+- **`state_size`**: Size of the state space.
+- **`action_size`**: Size of the action space.
+- **`gamma`**: Discount factor for future rewards.
+- **`res_queue`**: Queue for storing results from the workers.
+
+#### Methods
+
+- **`__init__(global_model, optimizer, res_queue, idx, env_name, state_size, action_size)`**: Initializes the worker with the specified parameters.
+  - **Parameters**:
+    - `global_model` (tf.keras.Model): Shared global neural network model.
+    - `optimizer` (tf.keras.optimizers.Optimizer): Optimizer for training the neural network.
+    - `res_queue` (multiprocessing.Queue): Queue for storing results from the workers.
+    - `idx` (int): Index of the worker.
+    - `env_name` (str): Name of the environment.
+    - `state_size` (int): Size of the state space.
+    - `action_size` (int): Size of the action space.
+
+- **`build_model()`**: Builds the neural network model for the worker.
+  - **Returns**: A compiled Keras model.
+
+- **`run()`**: Main loop for the worker, interacting with the environment and updating the global model.
+  
+- **`update_global(mem)`**: Updates the global model with gradients computed from the local experiences.
+  - **Parameters**:
+    - `mem` (list): List of experiences collected during the episode.
 
 ## Gameplay Logic
 
